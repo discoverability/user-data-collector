@@ -4,11 +4,11 @@ services:
   web:
     build: .
     command: flask run --host=0.0.0.0 --port=8000
-    working_dir: /netflix-database
+    working_dir: /discoverability
     depends_on:
       - db
     volumes:
-      - .:/netflix-database
+      - .:/discoverability
     env_file:
       - env_files/.env.development
     ports:
