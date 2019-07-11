@@ -31,6 +31,20 @@ build-api:
   -g python-flask \
   -o /local/generated
 
+build-api-client:
+	sudo docker run --rm \
+  -v ${PWD}/..:/local openapitools/openapi-generator-cli generate \
+  -i /local/api/api-definition.yml \
+  -g typescript-jquery \
+  -o /local/chrome_extension/generated
+
+build-api-client-ruby:
+	sudo docker run --rm \
+  -v ${PWD}/..:/local openapitools/openapi-generator-cli generate \
+  -i /local/api/api-definition.yml \
+  -g ruby \
+  -o /local/moviedb
+
 clean-model:
 	rm -rf sqlgen
 	rm -rf migrations
