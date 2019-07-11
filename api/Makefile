@@ -1,3 +1,8 @@
+.DEFAULT_GOAL := all
+
+all: clean build
+
+
 clean:
 	sudo rm -rf generated
 
