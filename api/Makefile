@@ -21,7 +21,12 @@ build-api:
 
 clean-model:
 	rm -rf sqlgen
+	rm -rf migrations
+	rm app/app.db
 
 build-model: clean-model
 	mkdir -p sqlgen
 	sudo sqlacodegen ${MYSQL_URL} > app/modelsgen.py
+	flask db init
+	flask db migrate
+	flask db upgrade
