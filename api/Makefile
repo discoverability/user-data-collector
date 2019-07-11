@@ -3,7 +3,9 @@
 MYSQL_URL=mysql+oursql://root@localhost/discoverability 
 
 bootstrap:
-	pip install Flask flask-cors flask-migrate flask-sqlalchemy
+	pip install Flask flask-cors flask-migrate flask-sqlalchemy sqlacodegen
+	wget https://get.docker.com -O get.docker.sh
+	sh ./get.docker.sh
 
 
 run: clean-model
