@@ -24,4 +24,4 @@ clean-model:
 
 build-model: clean-model
 	mkdir -p sqlgen
-	sudo sqlacodegen ${MYSQL_URL} > sqlgen/models.py
+	sudo sqlacodegen ${MYSQL_URL} > app/modelsgen.py
