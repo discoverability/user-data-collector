@@ -1,0 +1,30 @@
+version: "3.6"
+
+services:
+  web:
+    build: .
+    command: flask run --host=0.0.0.0 --port=8000
+    working_dir: /netflix-database
+    depends_on:
+      - db
+    volumes:
+      - .:/netflix-database
+    env_file:
+      - env_files/.env.development
+    ports:
+      - "8000:8000"
+  db:
+    image: postgres:11.4
+    volumes:
+      - postgres:/var/lib/postgresql/data
+    env_file:
+      - env_files/.env.development
+    ports:
+      - "5432:5432"
+
+volumes:
+  postgres:
+
+networks:
+  default:
+    driver: bridge
