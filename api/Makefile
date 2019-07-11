@@ -2,6 +2,16 @@
 
 MYSQL_URL=mysql+oursql://root@localhost/discoverability 
 
+bootstrap:
+	pip install Flask flask-cors flask-migrate flask-sqlalchemy
+
+
+run: clean-model
+	export FLASK_APP=sniffer_api.py
+	flask db init
+	flask db migrate
+	flask db upgrade
+	flask run
 
 all: clean build
 
