@@ -1,57 +1,87 @@
-prerequisite
-=======
+# Install
 
-installing all prerequisites: flask, sqlacodegen, docker, docker-compose
+## Install docker and docker-compose if necessary:
 
 ```bash
-	#python dependencies
-	pip install Flask flask-cors flask-migrate flask-sqlalchemy sqlacodegen
-        #docker-ce
-	wget https://get.docker.com -O get.docker.sh
-	sh ./get.docker.sh
-        #docker compose
-	sudo curl -L "https://github.com/docker/compose/releases/download/1.24.0/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-	sudo chmod +x /usr/local/bin/docker-compose
+# docker-ce
+$ wget https://get.docker.com -O get.docker.sh sh ./get.docker.sh
+
+# To run docker without sudo (remember to log out and back in for this to take effect!)
+$ sudo groupadd docker && sudo usermod -aG docker $USER
+
+# docker compose
+$ sudo curl -L "https://github.com/docker/compose/releases/download/1.24.0/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+$ sudo chmod +x /usr/local/bin/docker-compose
 ```
 
+## Build all the services and create the database:
 
-Code generation
-========
+```bash
+$ docker-compose up
+
+# Create the DB
+$ docker-compose exec web bash -c 'PGPASSWORD=$POSTGRES_PASSWORD createdb -U $POSTGRES_USER -h db $POSTGRES_USER'
+```
+
+## Seed the database:
+
+```python
+# /!\ Execute these commands inside the web container
+$ python
+>>> from app import db
+>>> db.create_all(); exit()
+# Set alembic revision to latest to avoid running all the previous migrations
+$ flask db stamp head
+```
+
+## Start the project:
+
+```
+docker-compose up
+```
+
+---
+
+# Code generation
 
 We rely on [OpenAPIs code generation](http://openapis.org/) and sql reverse engineering to create back-end code for rest APIs and persistence.
 
-python rest api
------------------
+**/!\ All these commands must be executed inside the web container /!\\**
+
+## Python rest api
+
+Generates the python-flask REST API layer from its [openapi specification](http://spec.openapis.org/oas/v3.0.2) in file api-definition.yml.
 
 ```bash
 make build-api
 ```
 
-* generates the python-flask REST API layer from its [openapi specification](http://spec.openapis.org/oas/v3.0.2) in file api-definition.yml
+## Python persistence models
 
+Generates the persistence model objects from a live SQL connection specified in the Makefile.
 
-python persistence models
--------------------------
 ```bash
 make build-model
 ```
 
-* generates the persistence model objects from a live SQL connection specified in the MAKEFILE
+## Javascript client API
 
+Generates the typescript-jquery client for the API.
 
-Javascript client API
-------------------
-
-```bash 
+```bash
 make build-api-client
 ```
 
-* generates the typescript-jquery client for the API
+## Ruby client API
 
-Ruby client API
--------------------
+Generates the ruby client for the API.
 
-```bash 
+```bash
 make build-api-client-ruby
 ```
-* generates the ruby client for the API
+
+---
+
+## Production
+
+it should run as a WSGI app, behind https

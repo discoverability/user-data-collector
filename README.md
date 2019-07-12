@@ -1,23 +1,8 @@
-# Server Installation
+# API
 
-## Devel
+See [README](api/README.md)
 
-```bash
-pip install Flask flask-cors flask-migrate flask-sqlalchemy
-cd api
-export FLASK_APP=sniffer_api.py 
-flask db init
-flask db migrate
-flask db update
-flask run
-```
-
-## Production
-
-it should run as a WSGI app, behind https
-
-
-# Chrome extension 
+# Chrome extension
 
 ## Installation and execution steps
 
@@ -25,12 +10,12 @@ it should run as a WSGI app, behind https
 2. Download the crx file
 3. Open the [extension page](chrome://extensions/) on chrome by typing the following address in a new tab: chrome://extensions/
 4. Switch to developer mode by flipping the switch on the up-right corner of the extension page
-4. drag and drop the crx file the extension page
-5. accept the installation
-6. go to youtube.com
-7. while on youtube.com, a colored "streaming sniffer" icon should appear next to your address bar
-8. while on youtube.com, click on the streaming sniffer icon
-9. enter your email and press submit
-10. while on youtube.com, click on the streaming sniffer icon AGAIN
-11. Click on "Grab Streaming Info" to get the content id shown on the page
-12. click on the "check your logs here" to see all the content ids collected for the email.
+5. drag and drop the crx file the extension page
+6. accept the installation
+7. go to youtube.com
+8. while on youtube.com, a colored "streaming sniffer" icon should appear next to your address bar
+9. while on youtube.com, click on the streaming sniffer icon
+10. enter your email and press submit
+11. while on youtube.com, click on the streaming sniffer icon AGAIN
+12. Click on "Grab Streaming Info" to get the content id shown on the page
+13. click on the "check your logs here" to see all the content ids collected for the email.

@@ -56,3 +56,8 @@ build-model: clean-model
 	flask db init
 	flask db migrate
 	flask db upgrade
+
+
+clean-docker:
+	docker-compose down
+	docker volume rm api_postgres
