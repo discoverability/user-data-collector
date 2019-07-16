@@ -7,9 +7,10 @@ tags:
   description: "Everything about your Consumptions"
 - name: "Recommandation"
   description: "Everything about your Recommandations"
-    
 - name: "Account"
   description: "Everything about your Account"
+- name: "Movies"
+  description: "Everything about your Movies"
 
 schemes:
 - "https"
@@ -39,13 +40,13 @@ paths:
         description: "id Movie"
         required: false
         type: "integer"
-        format: "int64"
+        format: "int32"
       - name: "idAccount"
         in: "header"
         description: "id Account"
         required: false
         type: "integer"
-        format: "int64"
+        format: "int32"
       - in: "body"
         name: "body"
         description: "Conso object that needs to be added to the account"
@@ -71,7 +72,7 @@ paths:
         description: "ID of consumption to return"
         required: true
         type: "integer"
-        format: "int64"
+        format: "int32"
       responses:
         200:
           description: "successful operation"
@@ -84,31 +85,6 @@ paths:
       security:
       - api_key: []
       
-    delete:
-      tags:
-      - "Consumption"
-      summary: "Deletes a consumption"
-      description: ""
-      operationId: "deleteConsumption"
-      produces:
-      - "application/xml"
-      - "application/json"
-      parameters:
-      - name: "api_key"
-        in: "header"
-        required: false
-        type: "string"
-      - name: "idConso"
-        in: "path"
-        description: "Consumption id to delete"
-        required: true
-        type: "integer"
-        format: "int64"
-      responses:
-        400:
-          description: "Invalid ID supplied"
-        404:
-          description: "Consumption not found"
       
   /consumption/findByDate:
     get:
@@ -138,6 +114,37 @@ paths:
               $ref: "#/definitions/consumption"
         400:
           description: "Invalid date value"
+          
+  /consumption/findByCountry:
+    get:
+      tags:
+      - "Consumption"
+      summary: "Finds recommandation by countries"
+      description: "Multiple countries values can be provided with comma separated strings"
+      operationId: "findComsumptionByCountries"
+      produces:
+      - "application/xml"
+      - "application/json"
+      parameters:
+      - name: "countries"
+        in: "query"
+        description: "Countries values that need to be considered for filter"
+        required: true
+        type: "array"
+        items:
+          type: "integer"
+          
+        collectionFormat: "multi"
+        
+      responses:
+        200:
+          description: "successful operation"
+          schema:
+            type: "array"
+            items:
+              $ref: "#/definitions/consumption"
+        400:
+          description: "Invalid country value"
         
         
   /recommandation:     
@@ -163,13 +170,12 @@ paths:
           description: "id Movie"
           required: false
           type: "integer"
-          format: "int64"
-        - name: "idAccount"
+          format: "int32"
+        - name: "UUID"
           in: "header"
-          description: "id Account"
+          description: "UUID"
           required: false
-          type: "integer"
-          format: "int64"
+          type: "string"
         - in: "body"
           name: "body"
           description: "Recommandation object that needs to be added to the account"
@@ -196,7 +202,7 @@ paths:
         description: "ID of recommandation to return"
         required: true
         type: "integer"
-        format: "int64"
+        format: "int32"
       responses:
         200:
           description: "successful operation"
@@ -209,31 +215,6 @@ paths:
       security:
       - api_key: []
       
-    delete:
-      tags:
-      - "Recommandation"
-      summary: "Deletes a recommandation"
-      description: ""
-      operationId: "deleteRecommandation"
-      produces:
-      - "application/xml"
-      - "application/json"
-      parameters:
-      - name: "api_key"
-        in: "header"
-        required: false
-        type: "string"
-      - name: "idReco"
-        in: "path"
-        description: "Recommandation id to delete"
-        required: true
-        type: "integer"
-        format: "int64"
-      responses:
-        400:
-          description: "Invalid ID supplied"
-        404:
-          description: "Recommandation not found"
       
   /recommandation/findByDate:
     get:
@@ -241,7 +222,7 @@ paths:
       - "Recommandation"
       summary: "Finds recommandation by date"
       description: "Multiple status values can be provided with comma separated strings"
-      operationId: "findRecommandationByStatus"
+      operationId: "findRecommandationByDate"
       produces:
       - "application/xml"
       - "application/json"
@@ -263,8 +244,203 @@ paths:
               $ref: "#/definitions/recommandation"
         400:
           description: "Invalid date value"
+          
+  /recommandation/findByCountry:
+    get:
+      tags:
+      - "Recommandation"
+      summary: "Finds recommandation by countries"
+      description: "Multiple countries values can be provided with comma separated strings"
+      operationId: "findRecommandationByCountries"
+      produces:
+      - "application/xml"
+      - "application/json"
+      parameters:
+      - name: "countries"
+        in: "query"
+        description: "Countries values that need to be considered for filter"
+        required: true
+        type: "array"
+        items:
+          type: "integer"
+          
+        collectionFormat: "multi"
+        
+      responses:
+        200:
+          description: "successful operation"
+          schema:
+            type: "array"
+            items:
+              $ref: "#/definitions/recommandation"
+        400:
+          description: "Invalid country value"
 
-
+  
+  /movies:
+    post:
+      tags:
+      - "Movies"
+      summary: "Add a new Movie"
+      description: ""
+      operationId: "addMovie"
+      consumes:
+      - "application/json"
+      - "application/xml"
+      produces:
+      - "application/xml"
+      - "application/json"
+      parameters:
+      - name: "api_key"
+        in: "header"
+        required: false
+        type: "string"
+      - name: "idMovie"
+        in: "header"
+        description: "id Movie"
+        required: false
+        type: "integer"
+        format: "int32"
+      - name: "title"
+        in: "header"
+        description: "Title"
+        required: false
+        type: "integer"
+        format: "int32"
+      - name: "release"
+        in: "header"
+        description: "Date release"
+        required: false
+        type: "string"
+        format: "date"
+      - in: "body"
+        name: "body"
+        description: "Movie object that needs to be added to the account"
+        required: true
+        schema:
+          $ref: "#/definitions/movies"
+      responses:
+        405:
+          description: "Invalid input"
+          
+  /movies/{id}:
+    get:
+      tags:
+      - "Movies"
+      summary: "Find movie by ID"
+      description: "Returns a movie"
+      operationId: "getmovieById"
+      produces:
+      - "application/xml"
+      - "application/json"
+      parameters:
+      - name: "id"
+        in: "path"
+        description: "ID of recommandation to return"
+        required: true
+        type: "integer"
+        format: "int32"
+      responses:
+        200:
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/movies"
+        400:
+          description: "Invalid ID supplied"
+        404:
+          description: "Movie not found"
+      security:
+      - api_key: []
+      
+      
+  /movies/findByDate:
+    get:
+      tags:
+      - "Movies"
+      summary: "Finds movies by date"
+      description: "Multiple date values can be provided with comma separated strings"
+      operationId: "findMovieByDate"
+      produces:
+      - "application/xml"
+      - "application/json"
+      parameters:
+      - name: "release_at"
+        in: "query"
+        description: "Release date values that need to be considered for filter"
+        required: true
+        type: "array"
+        items:
+          type: "string"
+        collectionFormat: "multi"
+      responses:
+        200:
+          description: "successful operation"
+          schema:
+            type: "array"
+            items:
+              $ref: "#/definitions/movies"
+        400:
+          description: "Invalid date value"
+    
+  /movies/findByType:
+    get:
+      tags:
+      - "Movies"
+      summary: "Finds movies by types"
+      description: "Multiple types values can be provided with comma separated strings"
+      operationId: "findMovieByTypes"
+      produces:
+      - "application/xml"
+      - "application/json"
+      parameters:
+      - name: "movies_types_id"
+        in: "query"
+        description: "Types values that need to be considered for filter"
+        required: true
+        type: "array"
+        items:
+          type: "integer"
+        collectionFormat: "multi"
+      responses:
+        200:
+          description: "successful operation"
+          schema:
+            type: "array"
+            items:
+              $ref: "#/definitions/movies"
+        400:
+          description: "Invalid type value"
+  
+  /movies/findByCountry:
+    get:
+      tags:
+      - "Movies"
+      summary: "Finds movies by countries"
+      description: "Multiple countries values can be provided with comma separated strings"
+      operationId: "findMovieByCountries"
+      produces:
+      - "application/xml"
+      - "application/json"
+      parameters:
+      - name: "countries"
+        in: "query"
+        description: "Countries values that need to be considered for filter"
+        required: true
+        type: "array"
+        items:
+          type: "integer"
+        collectionFormat: "multi"
+      responses:
+        200:
+          description: "successful operation"
+          schema:
+            type: "array"
+            items:
+              $ref: "#/definitions/movies"
+        400:
+          description: "Invalid country value"
+  
+  
 
 
   /account:
@@ -288,50 +464,7 @@ paths:
         default:
           description: "successful operation"
           
-  /account/createWithArray:
-    post:
-      tags:
-      - "Account"
-      summary: "Creates list of accounts with given input array"
-      description: ""
-      operationId: "createAccountsWithArrayInput"
-      produces:
-      - "application/xml"
-      - "application/json"
-      parameters:
-      - in: "body"
-        name: "body"
-        description: "List of account object"
-        required: true
-        schema:
-          type: "array"
-          items:
-            $ref: "#/definitions/account"
-      responses:
-        default:
-          description: "successful operation"
-  /account/createWithList:
-    post:
-      tags:
-      - "Account"
-      summary: "Creates list of accounts with given input array"
-      description: ""
-      operationId: "createAccountsWithListInput"
-      produces:
-      - "application/xml"
-      - "application/json"
-      parameters:
-      - in: "body"
-        name: "body"
-        description: "List of account object"
-        required: true
-        schema:
-          type: "array"
-          items:
-            $ref: "#/definitions/account"
-      responses:
-        default:
-          description: "successful operation"
+  
   
   /account/{UUID}:
     get:
@@ -349,6 +482,7 @@ paths:
         description: "The UUID that needs to be fetched. "
         required: true
         type: "string"
+        format: "uuid"
       responses:
         200:
           description: "successful operation"
@@ -358,26 +492,7 @@ paths:
           description: "Invalid UUID supplied"
         404:
           description: "Account UUID found"
-    delete:
-      tags:
-      - "Account"
-      summary: "Delete account"
-      description: ""
-      operationId: "deleteAccount"
-      produces:
-      - "application/xml"
-      - "application/json"
-      parameters:
-      - name: "UUID"
-        in: "path"
-        description: "The account that needs to be deleted"
-        required: true
-        type: "string"
-      responses:
-        400:
-          description: "Invalid UUID supplied"
-        404:
-          description: "Account not found"
+    
   
 
 
@@ -387,8 +502,8 @@ securityDefinitions:
     authorizationUrl: "http://petstore.swagger.io/oauth/dialog"
     flow: "implicit"
     scopes:
-      write:pets: "modify pets in your account"
-      read:pets: "read your pets"
+      write:pets: "modify in your account"
+      read:pets: "read"
   api_key:
     type: "apiKey"
     name: "api_key"
@@ -401,6 +516,7 @@ definitions:
     properties:
       UUID:
         type: "string"
+        format: "uuid"
       mail:
         type: "string"
       name:
@@ -416,17 +532,18 @@ definitions:
           $ref: "#/definitions/recommandation"
     xml:
       name: "account"
+
   movies:
     type: "object"
     properties:
       id:
         type: "integer"
-        format: "int64"
+        format: "int32"
       title:
         type: "string"
       type:
         type: "integer"
-        format: "int64"
+        format: "int32"
       description:
         type: "string"
       release_at:
@@ -440,12 +557,27 @@ definitions:
         format: "int64"
       movie_types_id:
         type: "integer"
-        format: "int64"
+        format: "int32"
+        items:
+          $ref: "#/definitions/type"
       netflix_id:
         type: "integer"
-        format: "int64"
+        format: "int32"
+      imdb_id:
+        type: "integer"
+        format: "int32"
+      countries:
+        type: "array"
+        items:
+          $ref: "#/definitions/country"
+      directors:
+        type: "array"
+        items:
+          $ref: "#/definitions/director"
     xml:
       name: "movies"
+      
+      
   recommandation:
     type: "object"
     properties:
@@ -487,7 +619,61 @@ definitions:
           $ref: "#/definitions/account"
     xml:
       name: "conso"
-        
+      
+  country:
+    type: "object"
+    properties:
+      idCountry:
+        type: "integer"
+        format: "int32"
+      code:
+        type: "string"
+    xml:
+      name: "country"
+      
+  director:
+    type: "object"
+    properties:
+      idDirector:
+        type: "integer"
+        format: "int32"
+      name:
+        type: "string"
+      gender:
+        type: "boolean"
+      birthday:
+        type: "string"
+        format: "date"
+      nationalies:
+        type: "array"
+        items:
+          $ref: "#/definitions/nationality"
+    xml:
+      name: "director"
+
+      
+  nationality:
+    type: "object"
+    properties:
+      idNationality:
+        type: "integer"
+        format: "int32"
+      name:
+        type: "string"
+    xml:
+      name: "nationalty"
+ 
+  type:
+    type: "object"
+    properties:
+      idType:
+        type: "integer"
+        format: "int32"
+      name:
+        type: "string"
+    xml:
+      name: "type"
+
 
   ApiResponse:
     type: "object"
