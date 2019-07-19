@@ -115,7 +115,7 @@ paths:
         400:
           description: "Invalid date value"
           
-  /consumption/findByCountry:
+  /consumption/findByCountries:
     get:
       tags:
       - "Consumption"
@@ -144,7 +144,7 @@ paths:
             items:
               $ref: "#/definitions/consumption"
         400:
-          description: "Invalid country value"
+          description: "Invalid countries value"
         
         
   /recommandation:     
@@ -245,7 +245,7 @@ paths:
         400:
           description: "Invalid date value"
           
-  /recommandation/findByCountry:
+  /recommandation/findByCountries:
     get:
       tags:
       - "Recommandation"
@@ -274,7 +274,7 @@ paths:
             items:
               $ref: "#/definitions/recommandation"
         400:
-          description: "Invalid country value"
+          description: "Invalid countries value"
 
   
   /movies:
@@ -411,7 +411,7 @@ paths:
         400:
           description: "Invalid type value"
   
-  /movies/findByCountry:
+  /movies/findByCountries:
     get:
       tags:
       - "Movies"
@@ -438,7 +438,7 @@ paths:
             items:
               $ref: "#/definitions/movies"
         400:
-          description: "Invalid country value"
+          description: "Invalid countries value"
   
   
 
@@ -517,11 +517,9 @@ definitions:
       UUID:
         type: "string"
         format: "uuid"
-      mail:
-        type: "string"
-      name:
-         type: "string"
-      
+      location:
+        items:
+          $ref: "#/definitions/countries"
       Consumptions:
         type: "array"
         items:
@@ -569,11 +567,27 @@ definitions:
       countries:
         type: "array"
         items:
-          $ref: "#/definitions/country"
+          $ref: "#/definitions/countries"
+      nationalities:
+        type: "array"
+        items:
+          $ref: "#/definitions/nationalities"
       directors:
         type: "array"
         items:
-          $ref: "#/definitions/director"
+          $ref: "#/definitions/directors"
+      actors:
+        type: "array"
+        items:
+          $ref: "#/definitions/actors"
+      festivals:
+        type: "array"
+        items:
+          $ref: "#/definitions/festival"
+      academy-award:
+        type: "array"
+        items:
+          $ref: "#/definitions/academy_award"
     xml:
       name: "movies"
       
@@ -593,7 +607,7 @@ definitions:
       thumb_Z:
         type: "integer"
         format: "int64"
-      id:
+      id_movies:
         items:
           $ref: "#/definitions/movies"
       UUID:
@@ -620,18 +634,18 @@ definitions:
     xml:
       name: "conso"
       
-  country:
+  countries:
     type: "object"
     properties:
-      idCountry:
+      idCountries:
         type: "integer"
         format: "int32"
       code:
         type: "string"
     xml:
-      name: "country"
+      name: "countries"
       
-  director:
+  directors:
     type: "object"
     properties:
       idDirector:
@@ -647,21 +661,32 @@ definitions:
       nationalies:
         type: "array"
         items:
-          $ref: "#/definitions/nationality"
+          $ref: "#/definitions/nationalities"
     xml:
-      name: "director"
-
+      name: "directors"
       
-  nationality:
+  actors:
     type: "object"
     properties:
-      idNationality:
+      idActors:
         type: "integer"
         format: "int32"
       name:
         type: "string"
     xml:
-      name: "nationalty"
+      name: "actors"
+
+      
+  nationalities:
+    type: "object"
+    properties:
+      idNationalities:
+        type: "integer"
+        format: "int32"
+      name:
+        type: "string"
+    xml:
+      name: "nationalties"
  
   type:
     type: "object"
@@ -673,6 +698,62 @@ definitions:
         type: "string"
     xml:
       name: "type"
+      
+  festival:
+    type: "object"
+    properties:
+      idFestival:
+        type: "integer"
+        format: "int32"
+      name:
+        type: "string"
+      year:
+        type: "string"
+        format: "date"
+      countries:
+        items:
+          $ref: "#/definitions/countries"
+      filmss:
+        type: "array"
+        items:
+          $ref: "#/definitions/movies"
+      selectionName:
+        type: "array"
+        items:
+          $ref: "#/definitions/festival_selection_name"
+    xml:
+      name: "festival"
+      
+  festival_selection_name:
+    type: "object"
+    properties:
+      idFestivalSelec:
+        type: "integer"
+        format: "int32"
+      name:
+        type: "string"
+      idFestival:
+        items:
+          $ref: "#/definitions/festival"
+    xml:
+      name: "type"
+      
+  academy_award:
+    type: "object"
+    properties:
+      id:
+        type: "integer"
+        format: "int32"
+      title:
+        type: "string"
+      date:
+        type: "string"
+        format: "date"
+      movie_id:
+        items:
+          $ref: "#/definitions/movies"
+    xml:
+      name: "academy_award"
 
 
   ApiResponse:
