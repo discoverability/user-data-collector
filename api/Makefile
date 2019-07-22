@@ -48,14 +48,14 @@ build-api-client-ruby:
 clean-model:
 	rm -rf sqlgen
 	rm -rf migrations
-	rm app/app.db
+	rm -f app/app.db
 
 build-model: clean-model
 	mkdir -p sqlgen
 	sudo sqlacodegen ${MYSQL_URL} > app/modelsgen.py
-	flask db init
-	flask db migrate
-	flask db upgrade
+	#flask db init
+	#flask db migrate
+	#flask db upgrade
 
 
 clean-docker:
