@@ -1,33 +1,45 @@
 <!DOCTYPE html>
 <html>
   <head>
+    <meta charset="UTF-8">
     <style>
       button {
         height: 30px;
         width: 300px;
         outline: none;
       }
+      #uuid {
+        display: none;
+      }
+      .flexUuid {
+        display:flex;
+        flex-direction: column;
+      }
+      span, p, a, button { margin: 5px; }
+      .flexLogs {
+        display: flex;
+        flex-direction: row;
+        justify-content: space-between;
+      }
+      #waiting { display: none; text-align: center; }
     </style>
   </head>
   <body>
-    <p>UUID Generator</p>
-    <input id="uuid" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
-        placeholder="UUID Generator"></input>
-    <button id="generate">Generate</button>
-    <button id="copy">Copy</button>  
-    <div id="configured" style="display:none">
-    <div>Configured email: <span id="email" ></span></div>
-    <button id="changeColor">Grab Streming Info</button>
-    <div id="logslink" > <a href="#">check your logs here</a></div>
+    <div id="configured" style="display:none;">
+        <div class="flexUuid"><b><p>Your Uuid:</p></b><span id="uuidCreated" ></span></div>
+        <button id="changeColor">Grab your content</button>
+        <div class="flexLogs">
+          <div id="logslink" > <a href="#">Check your data here</a></div>
+          <div id="serverlinks" > <a href="#">Serveur access</a></div>
+        </div>
+    </div>
+    <div id="not-configured" style="display:none;">
+        <input type="text" id="uuid" required minlength="4" maxlength="64" size="36" />
+        <button type="button" id="generateUuid">
+          Generate Uuid
+        </button>
+        <p id="waiting">Please wait...</p>
+    </div>
     <script src="popup.js"></script>
-  </div>
-  <div id="not-configured" style="display:none">
-      <label for="name">Type in your email</label>
-      <input type="text" id="name" name="name" required minlength="4" maxlength="64" size="36" />
-      <input type="submit" id="submit" />
-
-  </div>
-
-    
   </body>
 </html>
