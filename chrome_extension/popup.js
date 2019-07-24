@@ -4,63 +4,57 @@
 
 'use strict';
 
+/**
+ * Listens for the app launching then creates the window
+ *
+ * @see http://developer.chrome.com/apps/app.window.html
+ */
+
 chrome.runtime.onInstalled.addListener(function (details) {
   if (details.reason == "install") {
     chrome.app.window.create('options.html', {
+      id: 'options',
       bounds: {
-        'width': 1024,
-        'height': 768
-       }
-      
-       });
-  } 
+        width: 1024,
+        height: 768
+      }
+    });
+  }
 });
 
-
-function randomUUID() {
-    document.getElementById('uuid').value = ([1e7] + -1e3 + -4e3 + -8e3 + -1e11).replace(/[018]/g, c =>
+function generatedUuid() {
+  return ([1e7] + -1e3 + -4e3 + -8e3 + -1e11).replace(/[018]/g, c =>
         (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
     )
-        chrome.storage.sync.set({uuid: uuid}, function() {
-     console.log('uuid saved ' + uuid);}
-        
-function copyText() {
-    document.getElementById('uuid').select()
-    document.execCommand('copy')
-}
-
-document.getElementById('generate').addEventListener('click', randomUUID)
-document.getElementById('copy').addEventListener('click', copyText)
-
-randomUUID()
-
 }
 
 function load_popup(data){
 
-  
-  if('email' in data){
+  if('uuid' in data){
 
     document.getElementById("configured").style.display="inline";
     document.getElementById("not-configured").style.display="none";
 
-    
-    document.getElementById("email").innerHTML=data.email;
-    
+
+    document.getElementById("uuidCreated").innerHTML=data.uuid;
+
     document.querySelector("#logslink a").onclick = function () {
-      chrome.tabs.create({active: true, url: "https://streaming-sniffer-api.nextnet.top/"+data.email+"/logs"});
-  };
-    
-  
+      chrome.tabs.create({active: true, url: "https://streaming-sniffer-api.nextnet.top/"+data.uuid+"/logs"});
+    };
+
+    document.querySelector("#serverlinks a").onclick = function () {
+      chrome.tabs.create({active: true, url: "https://streaming-sniffer-api.nextnet.top/"});
+    };
+
     changeColor.onclick = function(element) {
-      
+
       chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
         chrome.tabs.executeScript(
             tabs[0].id,
             {code:`
             for(let a of document.querySelectorAll("#content #contents #contents a#thumbnail")){
               const xhr = new XMLHttpRequest();
-              xhr.open('POST', 'https://streaming-sniffer-api.nextnet.top/`+data.email+`/'+a.href.substring(32,43));
+              xhr.open('POST', 'https://streaming-sniffer-api.nextnet.top/`+data.uuid+`/'+a.href.substring(32,43));
               xhr.send();
             }
             `});
@@ -68,29 +62,31 @@ function load_popup(data){
     };
     }
     else{
-  
-      document.getElementById("not-configured").style.display="inline";
-      document.getElementById("configured").style.display="none";
-      let submit = document.getElementById('submit');
-  submit.addEventListener('click', function() {
-        let email=document.getElementById("name").value;
-        chrome.storage.sync.set({email: email}, function() {
-          console.log('email saved ' + email);
+
+      document.getElementById('configured').style.display="none";
+      document.getElementById('not-configured').style.display="inline";
+      document.getElementById('uuid').value = generatedUuid();
+      document.getElementById('generateUuid').addEventListener('click', function() {
+        document.getElementById('waiting').style.display="block";
+        let uuid=document.getElementById('uuid').value;
+        chrome.storage.sync.set({uuid: uuid}, function() {
+          console.log('uuid saved ' + uuid);
           const xhr = new XMLHttpRequest();
-          xhr.open('POST', 'https://streaming-sniffer-api.nextnet.top/'+email);
+          xhr.open('POST', 'https://streaming-sniffer-api.nextnet.top/'+uuid);
           xhr.send();
           xhr.onreadystatechange=function(){
             if (xhr.readyState==4 && xhr.status==200){
-              chrome.storage.sync.get(['email'], function(data2) {
+              chrome.storage.sync.get(['uuid'], function(data2) {
                 load_popup(data2);
               });
             }
           };
         });
+        setTimeout(function() { document.location.reload(true) }, 5000);
       });
     }
-  
+
 }
-chrome.storage.sync.get(['email'], function(data) {
+chrome.storage.sync.get(['uuid'], function(data) {
   load_popup(data);
 });
