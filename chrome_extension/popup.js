@@ -2,6 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+var API_BASE="https://conso-api.vod-prime.space/"
+
 'use strict';
 
 /**
@@ -39,11 +41,11 @@ function load_popup(data){
     document.getElementById("uuidCreated").innerHTML=data.uuid;
 
     document.querySelector("#logslink a").onclick = function () {
-      chrome.tabs.create({active: true, url: "https://streaming-sniffer-api.nextnet.top/"+data.uuid+"/logs"});
+      chrome.tabs.create({active: true, url: API_BASE+data.uuid+"/logs"});
     };
 
     document.querySelector("#serverlinks a").onclick = function () {
-      chrome.tabs.create({active: true, url: "https://streaming-sniffer-api.nextnet.top/"});
+      chrome.tabs.create({active: true, url: API_BASE});
     };
 
     changeColor.onclick = function(element) {
@@ -54,7 +56,7 @@ function load_popup(data){
             {code:`
             for(let a of document.querySelectorAll("#content #contents #contents a#thumbnail")){
               const xhr = new XMLHttpRequest();
-              xhr.open('POST', 'https://streaming-sniffer-api.nextnet.top/`+data.uuid+`/'+a.href.substring(32,43));
+              xhr.open('POST', '`+API_BASE+data.uuid+`/'+a.href.substring(32,43));
               xhr.send();
             }
             `});
@@ -72,7 +74,7 @@ function load_popup(data){
         chrome.storage.sync.set({uuid: uuid}, function() {
           console.log('uuid saved ' + uuid);
           const xhr = new XMLHttpRequest();
-          xhr.open('POST', 'https://streaming-sniffer-api.nextnet.top/'+uuid);
+          xhr.open('POST', API_BASE+uuid);
           xhr.send();
           xhr.onreadystatechange=function(){
             if (xhr.readyState==4 && xhr.status==200){
