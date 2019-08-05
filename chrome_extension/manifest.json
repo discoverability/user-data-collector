@@ -4,7 +4,7 @@
     "description": "A extension to sniff content proposed by streaming websites",
     "permissions": ["activeTab","declarativeContent", "storage"],
     "background": {
-      "scripts": ["background.js","UUID.js","popup.js","options.js"],
+      "scripts": ["background.js","popup.js","options.js"],
       "persistent": false
     },
     "options_page": "options.html",
