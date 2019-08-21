@@ -1,10 +1,10 @@
  {
     "name": "Streaming Sniffer",
-    "version": "1.0",
-    "description": "A extension to sniff content proposed by streaming websites",
-    "permissions": ["activeTab","declarativeContent", "storage"],
+    "version": "1.1",
+    "description": "Extension pour récupérer des données de visionnages sur les sites de streaming.",
+    "permissions": ["activeTab", "declarativeContent", "storage", "tabs", "*://*/*"],
     "background": {
-      "scripts": ["background.js","popup.js","options.js"],
+      "scripts": ["background.js","options.js"],
       "persistent": false
     },
     "options_page": "options.html",
