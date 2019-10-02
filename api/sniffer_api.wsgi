@@ -1,5 +1,5 @@
 import sys
-sys.path.insert(0, '/var/www/streaming-sniffer-api')
+sys.path.insert(0, '/var/www/discoverability/api')
 
-from app import app
+from app import app as application
 
