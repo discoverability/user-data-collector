@@ -8,7 +8,7 @@ chrome.runtime.onInstalled.addListener(function() {
   chrome.storage.sync.set({uuid: generatedUuid()});
   chrome.storage.sync.get("uuid", function (obj) {
     const xhr = new XMLHttpRequest();
-    xhr.open('POST', 'https://streaming-sniffer-api.nextnet.top/'+obj.uuid);
+    xhr.open('POST', BASE_URL+"/"+obj.uuid);
     xhr.send();
   })
   chrome.declarativeContent.onPageChanged.removeRules(undefined, function() {
@@ -41,7 +41,7 @@ chrome.runtime.onInstalled.addListener(function() {
                 {code:`
                 for(let a of document.querySelectorAll("#content #contents #contents a#thumbnail")){
                   const xhr = new XMLHttpRequest();
-                  xhr.open('POST', 'https://streaming-sniffer-api.nextnet.top/`+obj.uuid+`/'+a.href.substring(32,43));
+                  xhr.open('POST', `+BASE_URL+`/`+obj.uuid+`/'+a.href.substring(32,43));
                   xhr.send();
                 }
               `});

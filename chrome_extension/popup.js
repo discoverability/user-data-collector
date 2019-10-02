@@ -29,7 +29,7 @@ chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
         {code:`
         for(let a of document.querySelectorAll("#content #contents #contents a#thumbnail")){
           const xhr = new XMLHttpRequest();
-          xhr.open('POST', 'https://streaming-sniffer-api.nextnet.top/`+obj.uuid+`/'+a.href.substring(32,43));
+          xhr.open('POST', '`+BASE_URL+`/`+obj.uuid+`/'+a.href.substring(32,43));
           xhr.send();
         }
       `});
@@ -39,10 +39,10 @@ chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
 chrome.storage.sync.get("uuid", function (obj) {
   document.getElementById('uuidCreated').innerText = obj.uuid;
   document.querySelector("#logslink a").onclick = function () {
-    chrome.tabs.create({active: true, url: "https://streaming-sniffer-api.nextnet.top/"+obj.uuid+"/logs"});
+    chrome.tabs.create({active: true, url: BASE_URL+obj.uuid+"/logs"});
   };
 
   document.querySelector("#serverlinks a").onclick = function () {
-    chrome.tabs.create({active: true, url: "https://streaming-sniffer-api.nextnet.top/"});
+    chrome.tabs.create({active: true, url: BASE_URL});
   };
 });
