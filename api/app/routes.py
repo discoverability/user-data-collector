@@ -31,7 +31,7 @@ def list_netflix_logs_for_user(email):
 
 @app.route("/", methods=['GET'])
 def list_users():
-    out = "\n".join(["<a href='" + u.email + "/logs' > " + u.email + "</a><br>" for u in db.session.query(User).all()])
+    out = "\n".join(["<a href='" + u.email + "/netflix/logs' > " + u.email + "</a><br>" +  for u in db.session.query(User).all()])
     return make_response(out, 200)
 
 
