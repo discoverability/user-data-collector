@@ -83,6 +83,18 @@ def del_logs(email):
     db.session.commit()
     return make_response("DELETED", 200)
 
+@app.route("/<email>/netflix/logs", methods=['DELETE'])
+def del_netflix_logs(email):
+    qs = db.session.query(User,NetflixMetadata,StreamLog).filter(User.email==email).filter(User.id==StreamLog.user_id).filter(StreamLog.id==NetflixMetadata.streamlog_id).all()
+    for q in qs:
+        u,n,s=q
+        db.session.delete(n)
+        db.session.delete(s)
+        db.session.commit()
+
+    db.session.commit()
+    return make_response("DELETED", 200)
+
 @app.route("/", methods=['DELETE'])
 def del_users():
     for u in db.session.query(User).all():
