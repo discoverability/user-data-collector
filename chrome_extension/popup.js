@@ -1,14 +1,4 @@
-// Copyright 2018 The Chromium Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file.
-
 'use strict';
-
-/**
- * Listens for the app launching then creates the window
- *
- * @see http://developer.chrome.com/apps/app.window.html
- */
 
 chrome.runtime.onInstalled.addListener(function (details) {
   if (details.reason == "install") {
@@ -39,7 +29,7 @@ chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
 chrome.storage.sync.get("uuid", function (obj) {
   document.getElementById('uuidCreated').innerText = obj.uuid;
   document.querySelector("#logslink a").onclick = function () {
-    chrome.tabs.create({active: true, url: BASE_URL+obj.uuid+"/logs"});
+    chrome.tabs.create({active: true, url: BASE_URL+"/"+obj.uuid+"/netflix/logs"});
   };
 
   document.querySelector("#serverlinks a").onclick = function () {

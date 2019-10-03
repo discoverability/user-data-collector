@@ -14,7 +14,7 @@ chrome.runtime.onInstalled.addListener(function() {
   chrome.declarativeContent.onPageChanged.removeRules(undefined, function() {
     chrome.declarativeContent.onPageChanged.addRules([{
       conditions: [new chrome.declarativeContent.PageStateMatcher({
-        pageUrl: {hostEquals: 'developer.chrome.com'},
+        
       })
       ],
           actions: [new chrome.declarativeContent.ShowPageAction()]
@@ -22,32 +22,7 @@ chrome.runtime.onInstalled.addListener(function() {
   });
 
 
-  chrome.declarativeContent.onPageChanged.removeRules(undefined, function() {
-    chrome.declarativeContent.onPageChanged.addRules([{
-      conditions: [new chrome.declarativeContent.PageStateMatcher({
-        pageUrl: {hostEquals: 'www.youtube.com'},
-      })
-      ],
-          actions: [new chrome.declarativeContent.ShowPageAction()]
-    }]);
-  });
+  
 
-  chrome.tabs.onUpdated.addListener(function(tabId, changeInfo, tab) {
-    if (changeInfo.url && changeInfo.url.includes('youtube')) {
-        chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
-          chrome.storage.sync.get("uuid", function (obj) {
-            chrome.tabs.executeScript(
-                tabs[0].id,
-                {code:`
-                for(let a of document.querySelectorAll("#content #contents #contents a#thumbnail")){
-                  const xhr = new XMLHttpRequest();
-                  xhr.open('POST', `+BASE_URL+`/`+obj.uuid+`/'+a.href.substring(32,43));
-                  xhr.send();
-                }
-              `});
-            });
-        });
-    }
-  });
 
 });
