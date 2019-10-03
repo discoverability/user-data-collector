@@ -22,16 +22,18 @@ def list_netflix_logs_for_user(email):
          .filter(StreamLog.id == NetflixMetadata.streamlog_id)
          .filter(User.email == email))
 
-    res = "#ip;content_id;date<br>"
+    res = "#timestamp;ip;content_id;location;row;rank;app_view<br>"
     for x in q.all():
-        res += "".join([("{};\t"*7 + "<br>").format(x[1].timestamp,x[0].id,x[1].ip, x[1].content_id,x[2].location,x[2].rank,x[2].row)])
+        res += "".join([("{};\t" * 7 + "<br>").format(x[1].timestamp, x[1].ip, x[1].content_id, x[2].location, x[2].row,
+                                                      x[2].rank, x[2].appView)])
 
     return make_response(res, 200)
 
 
 @app.route("/", methods=['GET'])
 def list_users():
-    out = "\n".join(["<a href='" + u.email + "/netflix/logs' > " + u.email + "</a><br>" +  for u in db.session.query(User).all()])
+    out = "\n".join(
+        ["<a href='" + u.email + "/netflix/logs' > " + u.email + "</a><br>" for u in db.session.query(User).all()])
     return make_response(out, 200)
 
 
@@ -83,11 +85,13 @@ def del_logs(email):
     db.session.commit()
     return make_response("DELETED", 200)
 
+
 @app.route("/<email>/netflix/logs", methods=['DELETE'])
 def del_netflix_logs(email):
-    qs = db.session.query(User,NetflixMetadata,StreamLog).filter(User.email==email).filter(User.id==StreamLog.user_id).filter(StreamLog.id==NetflixMetadata.streamlog_id).all()
+    qs = db.session.query(User, NetflixMetadata, StreamLog).filter(User.email == email).filter(
+        User.id == StreamLog.user_id).filter(StreamLog.id == NetflixMetadata.streamlog_id).all()
     for q in qs:
-        u,n,s=q
+        u, n, s = q
         db.session.delete(n)
         db.session.delete(s)
         db.session.commit()
@@ -95,12 +99,13 @@ def del_netflix_logs(email):
     db.session.commit()
     return make_response("DELETED", 200)
 
+
 @app.route("/", methods=['DELETE'])
 def del_users():
     for u in db.session.query(User).all():
         db.session.delete(u)
     db.session.commit()
-    return make_response("DELETED",200)
+    return make_response("DELETED", 200)
 
 
 @app.route("/<email>/<content_id>", methods=['POST'])

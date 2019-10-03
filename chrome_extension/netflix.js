@@ -3,24 +3,15 @@ function isSliderItemShow(slider){
     {
         if (klass.match(new RegExp("slider-item-[0-9]", "g")))
         {
-            
             return true;
         }
-
-
     }
-
     return false;
-    
 }
 
 function onUUID_loaded(obj)
 {
-
-
-		
-        
-        // identify an element to observe
+// identify an element to observe
 var elementToObserve = document.querySelector("body");
 
 // create a new instance of `MutationObserver` named `observer`, 
@@ -29,7 +20,7 @@ var observer = new MutationObserver(function(mutationRecs) {
     for(let mutation of mutationRecs){
         for(let addedNode of mutation.addedNodes){
             
-            if( addedNode.classList.contains("lolomoRow")){
+            if( addedNode.classList && addedNode.classList.contains("lolomoRow")){
                 for(let slider of addedNode.querySelectorAll(".slider-item")){
                     if(isSliderItemShow(slider)){
                         var tracker = slider.querySelector(".ptrack-content");
@@ -48,16 +39,22 @@ var observer = new MutationObserver(function(mutationRecs) {
     }
 });
 
-// call `observe` on that MutationObserver instance, 
-// passing it the element to observe, and the options object
 observer.observe(elementToObserve, {subtree: true, childList: true});
+
+
+var billBoardTracker = document.querySelector(".billboard-row .ptrack-content");
+send_traking_telemetry(billBoardTracker, obj.uuid);
+
+for(let bigrow of document.querySelectorAll(".bigRowItem .ptrack-content")){
+    send_traking_telemetry(bigrow, obj.uuid);
+}
 
 
 for (let slider of document.querySelectorAll(".slider-item"))
 		{
             if(isSliderItemShow(slider)){
                 var tracker = slider.querySelector(".ptrack-content");
-                send_traking_telemetry(tracker, obj.uuid,rank_shift=0)
+                send_traking_telemetry(tracker, obj.uuid,rank_shift=0);
 
             }
 		}
@@ -72,14 +69,14 @@ for (let slider of document.querySelectorAll(".slider-item"))
 
 function send_traking_telemetry(htmlElement, uuid,rank_shift=0)
 {
-
-	const xhr = new XMLHttpRequest();
-    var data_ui_tracking_context = decodeURIComponent(htmlElement.getAttribute("data-ui-tracking-context"));
-    data_ui_tracking_context["rank"]+=rank_shift
-	xhr.open('POST', BASE_URL + '/' + uuid + '/netflix');
-    xhr.setRequestHeader("Content-Type", "application/json");
-    console.log("miom " + data_ui_tracking_context);
-	xhr.send(data_ui_tracking_context);
+    if(htmlElement){
+        const xhr = new XMLHttpRequest();
+        var data_ui_tracking_context = decodeURIComponent(htmlElement.getAttribute("data-ui-tracking-context"));
+        data_ui_tracking_context["rank"]+=rank_shift
+        xhr.open('POST', BASE_URL + '/' + uuid + '/netflix');
+        xhr.setRequestHeader("Content-Type", "application/json");
+        xhr.send(data_ui_tracking_context);
+    }
 }
 
 function on_handle_clicked(elt,uuid){
