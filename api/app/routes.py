@@ -1,4 +1,4 @@
-from app.models import StreamLog, User, NetflixMetadata
+from app.models import StreamLog, User, NetflixMetadata, NetflixWatchMetadata
 from flask import request, make_response
 from app import app
 from app import db
@@ -76,6 +76,28 @@ def add_netflix_log(email):
 
     db.session.commit()
     return make_response("CREATED {} {}".format(s.content_id, u.email), 201)
+
+
+@app.route("/<email>/netflix/watch/<track_id>", methods=['POST'])
+def add_netflix_log(email, track_id):
+    u = db.session.query(User).filter_by(email=email).first()
+    if u is None:
+        return make_response("NO SUCH EMAIL REGISTERED", 404)
+    payload = request.get_json()
+
+    n = NetflixWatchMetadata(track_id=track_id,
+                             rank=payload.rank,
+                             row=payload.row,
+                             list_id=payload.list_id,
+                             request_id=payload.request_id,
+                             lolomo_id=payload.lolomo_id,
+                             ip=request.remote_addr,
+                             user=u)
+
+    db.session.add(n)
+
+    db.session.commit()
+    return make_response("CREATED", 201)
 
 
 @app.route("/<email>", methods=['DELETE'])

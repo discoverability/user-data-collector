@@ -38,3 +38,16 @@ class NetflixMetadata(db.Model):
     usePresentedEvent=db.Column(db.Boolean)
     json_object = db.Column(db.String(64))
     streamlog_id = db.Column(db.Integer, db.ForeignKey("stream_log.id"))
+
+
+class NetflixWatchMetadata(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    track_id = db.Column(db.String(64))
+    list_id = db.Column(db.String(64))
+    rank = db.Column(db.Integer)
+    request_id = db.Column(db.String(64))
+    row = db.Column(db.Integer)
+    lolomo_id = db.Column(db.String(64))
+    ip = db.Column(db.String(64))
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id"))
+    timestamp = db.Column(db.DateTime, default=datetime.datetime.utcnow)
