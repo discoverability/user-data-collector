@@ -104,12 +104,12 @@ def add_netflix_watch_log(extension_id, video_id):
     payload = request.get_json()
 
     n = NetflixWatchMetadata(video_id=video_id,
-                             track_id=payload.get("track_id", ""),
-                             rank=payload.get("rank", ""),
-                             row=payload.get("row", ""),
-                             list_id=payload.get("list_id", ""),
-                             request_id=payload.get("request_id", ""),
-                             lolomo_id=payload.get("lolomo_id", ""),
+                             track_id=payload.get("track_id"),
+                             rank=payload.get("rank", None),
+                             row=payload.get("row", None),
+                             list_id=payload.get("list_id", None),
+                             request_id=payload.get("request_id", None),
+                             lolomo_id=payload.get("lolomo_id", None),
                              ip=request.remote_addr,
                              user=u)
 
