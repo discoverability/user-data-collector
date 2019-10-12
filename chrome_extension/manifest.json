@@ -2,7 +2,7 @@
     "name": "Media Discoverability Research by EMNS",
     "version": "1.1.1",
     "description": "Media Discoverability Research by Université Paris 1 Panthéon-Sorbonne.",
-    "permissions": ["activeTab", "declarativeContent", "storage", "tabs"],
+    "permissions": ["activeTab", "declarativeContent", "storage", "tabs","http://127.0.0.1:5000/"],
     "background": {
       "scripts": ["global.js","background.js","options.js"],
       "persistent": false
@@ -30,13 +30,10 @@
         "matches": ["https://*.youtube.com/*"],
         "js": ["global.js","youtube.js"]
       },
-      {
-        "matches": ["https://*.netflix.com/watch"],
-        "js": ["global.js","netflix_watch.js"]
-      },
+     
       {
         "matches": ["https://*.netflix.com/*"],
-        "js": ["global.js","netflix.js"]
+        "js": ["global.js","netflix_lib.js","netflix.js"]
       }
     ]
   }
