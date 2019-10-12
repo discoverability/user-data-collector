@@ -15,7 +15,8 @@ class ProdConfig(object):
     SQLALCHEMY_TRACK_MODIFICATIONS=False
 
 
-env=os.environ.get("APP_END",default="development")
+env=os.environ.get("APP_ENV","development")
+print("environment : %s"%env)
 if(env=="production"):
     config=ProdConfig()
 else:
