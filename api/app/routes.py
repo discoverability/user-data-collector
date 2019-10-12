@@ -30,7 +30,7 @@ def list_netflix_logs_for_user(extension_id):
 
     res = "#timestamp;ip;content_id;location;row;rank;app_view<br>"
     for _, suggest in q.all():
-        res += "".join([("{};\t" * 7 + "<br>").format(suggest.timestamp, suggest.ip, suggest.track_id, suggest.location,
+        res += "".join([("{};\t" * 8 + "<br>").format(suggest.timestamp, suggest.ip, suggest.video_id,suggest.track_id, suggest.location,
                                                       suggest.row, suggest.rank, suggest.appView)])
 
     return make_response(res, 200)
