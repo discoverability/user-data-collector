@@ -13,14 +13,6 @@ def list_netflix_for_user(extension_id):
     return make_response(res, 200)
 
 
-@app.route("/<extension_id>/logs", methods=['GET'])
-def list_logs_for_user(extension_id):
-    u = db.session.query(User).filter_by(extension_id=extension_id).first()
-    res = "#ip;content_id;date<br>"
-    res += "<br>".join(["{};{},{};{}".format(p.ip, p.type, p.timestamp)
-                        for p in u.posts])
-    return make_response(res, 200)
-
 
 @app.route("/<extension_id>/netflix/logs", methods=['GET'])
 def list_netflix_logs_for_user(extension_id):
@@ -51,10 +43,17 @@ def list_netflix_watches_for_user(extension_id):
 
 
 @app.route("/", methods=['GET'])
+def list_active_users():
+    out = "\n".join(
+        ["<a href='" + u.extension_id + "/netflix/logs' > " + u.extension_id +"("+str(len(u.suggestions))+" entries)"+ "</a><br>" for u in
+         db.session.query(User).all() if len(u.suggestions)>0])
+    return make_response(out, 200)
+
+@app.route("/users", methods=['GET'])
 def list_users():
     out = "\n".join(
-        ["<a href='" + u.extension_id + "/netflix/logs' > " + u.extension_id + "</a><br>" for u in
-         db.session.query(User).all()])
+        ["<a href='" + u.extension_id + "/netflix/logs' > " + u.extension_id +"("+str(len(u.suggestions))+" entries)"+ "</a><br>" for u in
+         db.session.query(User).all() ])
     return make_response(out, 200)
 
 
