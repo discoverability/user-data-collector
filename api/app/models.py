@@ -29,7 +29,7 @@ class Lolomo(db.Model):
     type = db.Column(db.String(64))
     associated_content = db.Column(db.String(64))
     full_text_description= db.Column(db.String(512))
-    single_page_session_id = db.Column(db.String(64),default="")
+    single_page_session_id = db.Column(db.String(64),default="",server_default='')
     user = db.relationship("User", back_populates="lolomos", )
 
 class StreamLog(db.Model):
@@ -48,7 +48,7 @@ class StreamLog(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey("user.id"))
     timestamp = db.Column(db.DateTime, default=datetime.datetime.utcnow)
     type = db.Column(db.String(50))
-    single_page_session_id = db.Column(db.String(64),default="")
+    single_page_session_id = db.Column(db.String(64),default="",server_default='')
 
     __mapper_args__ = {
         "polymorphic_identity": "stream_log",
