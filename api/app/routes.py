@@ -63,12 +63,12 @@ def list_netflix_lolomo_for_user_for_lolomo_id(extension_id, single_page_session
 
     res = "#timestamp;ip;rank;type;associated_content;full_text_description;single_page_session_id<br>"
     for _, lolomo in q.all():
-        res += "".join([("{};\t" * 7 + "<br>").format(lolomo.timestamp, lolomo.ip,
+        res += "".join([("{};\t" * 6 + "<br>").format(lolomo.timestamp, lolomo.ip,
                                                       lolomo.rank,
                                                       lolomo.type,
                                                       lolomo.associated_content,
-                                                      lolomo.full_text_description,
-                                                      lolomo.single_page_session_id)
+                                                      lolomo.full_text_description
+                                                      )
 
                         ])
 
