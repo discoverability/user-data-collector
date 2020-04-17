@@ -15,7 +15,22 @@ class User(db.Model):
         "NetflixWatchMetadata", back_populates="user", cascade="all, delete-orphan"
     )
 
+    lolomos = db.relationship(
+        "Lolomo", back_populates="user", cascade="all, delete-orphan"
+    )
 
+class Lolomo(db.Model):
+    __tablename__ = "lolomo"
+    id = db.Column(db.Integer, primary_key=True)
+    ip = db.Column(db.String(54))
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id"))
+    timestamp = db.Column(db.DateTime, default=datetime.datetime.utcnow)
+    rank = db.Column(db.Integer)
+    type = db.Column(db.String(64))
+    associated_content = db.Column(db.String(64))
+    full_text_description= db.Column(db.String(512))
+    single_page_session_id = db.Column(db.String(64))
+    user = db.relationship("User", back_populates="lolomos", )
 
 class StreamLog(db.Model):
     __tablename__ = "log"
@@ -33,6 +48,7 @@ class StreamLog(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey("user.id"))
     timestamp = db.Column(db.DateTime, default=datetime.datetime.utcnow)
     type = db.Column(db.String(50))
+    single_page_session_id = db.Column(db.String(64))
 
     __mapper_args__ = {
         "polymorphic_identity": "stream_log",

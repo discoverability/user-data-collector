@@ -1,4 +1,4 @@
-from app.models import StreamLog, User, NetflixSuggestMetadata, NetflixWatchMetadata
+from app.models import StreamLog, User, NetflixSuggestMetadata, NetflixWatchMetadata, Lolomo
 from flask import request, make_response
 from app import app
 from app import db
@@ -13,17 +13,64 @@ def list_netflix_for_user(extension_id):
     return make_response(res, 200)
 
 
-
 @app.route("/<extension_id>/netflix/logs", methods=['GET'])
 def list_netflix_logs_for_user(extension_id):
     q = (db.session.query(User, NetflixSuggestMetadata)
          .filter(User.id == NetflixSuggestMetadata.user_id)
          .filter(User.extension_id == extension_id))
 
-    res = "#timestamp;ip;content_id;location;row;rank;app_view<br>"
+    res = "<html><body>#timestamp;ip;content_id;location;row;rank;app_view<br>"
     for _, suggest in q.all():
-        res += "".join([("{};\t" * 8 + "<br>").format(suggest.timestamp, suggest.ip, suggest.video_id,suggest.track_id, suggest.location,
-                                                      suggest.row, suggest.rank, suggest.appView)])
+        res += "".join([("{};\t" * 8 + "<a href='{}'>{}</a>;" + "<br>").format(suggest.timestamp, suggest.ip,
+                                                                                suggest.video_id, suggest.track_id,
+                                                                                suggest.location,
+                                                                                suggest.row, suggest.rank,
+                                                                                suggest.appView,
+                                                                                "/"+extension_id + "/netflix/lolomos/" + suggest.single_page_session_id,
+                                                                                suggest.single_page_session_id)])
+    res+="</body></html>"
+
+    return make_response(res, 200)
+
+
+@app.route("/<extension_id>/netflix/lolomos", methods=['GET'])
+def list_netflix_lolomo_for_user(extension_id):
+    q = (db.session.query(User, Lolomo)
+         .filter(User.id == Lolomo.user_id)
+         .filter(User.extension_id == extension_id))
+
+    res = "#timestamp;ip;rank;type;associated_content;full_text_description;single_page_session_id<br>"
+    for _, lolomo in q.all():
+        res += "".join([("{};\t" * 7 + "<br>").format(lolomo.timestamp, lolomo.ip,
+                                                      lolomo.rank,
+                                                      lolomo.type,
+                                                      lolomo.associated_content,
+                                                      lolomo.full_text_description,
+                                                      lolomo.single_page_session_id)
+
+                        ])
+
+    return make_response(res, 200)
+
+
+@app.route("/<extension_id>/netflix/lolomos/<single_page_session_id>", methods=['GET'])
+def list_netflix_lolomo_for_user_for_lolomo_id(extension_id, single_page_session_id):
+    q = (db.session.query(User, Lolomo)
+         .filter(User.id == Lolomo.user_id)
+         .filter(User.extension_id == extension_id)
+         .filter(Lolomo.single_page_session_id == single_page_session_id)
+         )
+
+    res = "#timestamp;ip;rank;type;associated_content;full_text_description;single_page_session_id<br>"
+    for _, lolomo in q.all():
+        res += "".join([("{};\t" * 7 + "<br>").format(lolomo.timestamp, lolomo.ip,
+                                                      lolomo.rank,
+                                                      lolomo.type,
+                                                      lolomo.associated_content,
+                                                      lolomo.full_text_description,
+                                                      lolomo.single_page_session_id)
+
+                        ])
 
     return make_response(res, 200)
 
@@ -37,7 +84,8 @@ def list_netflix_watches_for_user(extension_id):
     res = "#timestamp;ip;video_id;track_id;rank;row;list_id;request_id;lolomo_id<br>"
     for (user, watch) in q.all():
         res += "%s;\t%s\t%s\t;%s;\t%s\t;%s\t;%s\t;%s\t;%s\t;<br>" % (
-            watch.timestamp,watch.ip, str(watch.video_id), str(watch.track_id), str(watch.rank), str(watch.row), watch.list_id, watch.request_id, watch.lolomo_id)
+            watch.timestamp, watch.ip, str(watch.video_id), str(watch.track_id), str(watch.rank), str(watch.row),
+            watch.list_id, watch.request_id, watch.lolomo_id)
 
     return make_response(res, 200)
 
@@ -45,15 +93,18 @@ def list_netflix_watches_for_user(extension_id):
 @app.route("/", methods=['GET'])
 def list_active_users():
     out = "\n".join(
-        ["<a href='" + u.extension_id + "/netflix/logs' > " + u.extension_id +"("+str(len(u.suggestions))+" entries)"+ "</a><br>" for u in
-         db.session.query(User).all() if len(u.suggestions)>0])
+        ["<a href='" + u.extension_id + "/netflix/logs' > " + u.extension_id + "(" + str(
+            len(u.suggestions)) + " entries)" + "</a><br>" for u in
+         db.session.query(User).all() if len(u.suggestions) > 0])
     return make_response(out, 200)
+
 
 @app.route("/users", methods=['GET'])
 def list_users():
     out = "\n".join(
-        ["<a href='" + u.extension_id + "/netflix/logs' > " + u.extension_id +"("+str(len(u.suggestions))+" entries)"+ "</a><br>" for u in
-         db.session.query(User).all() ])
+        ["<a href='" + u.extension_id + "/netflix/logs' > " + u.extension_id + "(" + str(
+            len(u.suggestions)) + " entries)" + "</a><br>" for u in
+         db.session.query(User).all()])
     return make_response(out, 200)
 
 
@@ -87,12 +138,35 @@ def add_netflix_suggest_log(extension_id):
                                maturityMisMatchNonEdgy=payload.get("maturityMisMatchNonEdgy", None),
                                appView=payload.get("appView", None),
                                usePresentedEvent=payload.get("usePresentedEvent", None),
-                               json_object=payload.get("json_object", None))
+                               json_object=payload.get("json_object", None),
+                               single_page_session_id=payload.get("single_page_session_id", None))
 
     db.session.add(n)
 
     db.session.commit()
     return make_response("CREATED {} {}".format(n.track_id, u.extension_id), 201)
+
+
+@app.route("/<extension_id>/netflix/lolomo", methods=['POST'])
+def add_netflix_lolomo_log(extension_id):
+    u = db.session.query(User).filter_by(extension_id=extension_id).first()
+    if u is None:
+        return make_response("NO SUCH extension_id REGISTERED", 404)
+    payload = request.get_json()
+
+    n = Lolomo(ip=request.remote_addr, user=u,
+               rank=payload.get("rank", None),
+               type=payload.get("type", None),
+               associated_content=payload.get("associated_content", None),
+               full_text_description=payload.get("full_text_description", None),
+               single_page_session_id=payload.get("single_page_session_id", None)
+
+               )
+
+    db.session.add(n)
+
+    db.session.commit()
+    return make_response("CREATED", 201)
 
 
 @app.route("/<extension_id>/netflix/watch/<video_id>", methods=['POST'])
@@ -110,7 +184,8 @@ def add_netflix_watch_log(extension_id, video_id):
                              request_id=payload.get("request_id", None),
                              lolomo_id=payload.get("lolomo_id", None),
                              ip=request.remote_addr,
-                             user=u)
+                             user=u,
+                             single_page_session_id=payload.get("single_page_session_id", None))
 
     db.session.add(n)
 
