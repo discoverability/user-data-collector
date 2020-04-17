@@ -45,7 +45,7 @@ def list_netflix_lolomo_for_user(extension_id):
                                                       lolomo.rank,
                                                       lolomo.type,
                                                       lolomo.associated_content,
-                                                      lolomo.full_text_description,
+                                                      lolomo.full_text_description.encode('utf-8').strip(),
                                                       lolomo.single_page_session_id)
 
                         ])
@@ -67,7 +67,7 @@ def list_netflix_lolomo_for_user_for_lolomo_id(extension_id, single_page_session
                                                       lolomo.rank,
                                                       lolomo.type,
                                                       lolomo.associated_content,
-                                                      lolomo.full_text_description
+                                                      lolomo.full_text_description.encode("utf-8").strip()
                                                       )
 
                         ])

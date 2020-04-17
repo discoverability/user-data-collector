@@ -1,5 +1,5 @@
 import sys
-sys.path.insert(0, '/var/www/discoverability/api')
+sys.path.insert(0, '/var/www/conso-api.vod-prime.space/api')
 
 import app
 from app.config import ProdConfig as config
