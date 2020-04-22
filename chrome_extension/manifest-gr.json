@@ -1,5 +1,5 @@
  {
-    "name": "Media Discoverability Research by EMNS -- Beta",
+    "name": "Media Discoverability Research by EMNS",
     "version": "1.1.4",
     "description": "Media Discoverability Research by Ecole des Médias et du Numérique, Université Paris 1 Panthéon-Sorbonne.",
     "permissions": ["activeTab", "declarativeContent", "storage", "http://127.0.0.1:5000/","https://streaming-sniffer-api.nextnet.top/"],

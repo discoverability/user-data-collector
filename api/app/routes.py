@@ -1,4 +1,4 @@
-from app.models import StreamLog, User, NetflixSuggestMetadata, NetflixWatchMetadata, Lolomo
+from app.models import StreamLog, User, NetflixSuggestMetadata, NetflixWatchMetadata, Lolomo, SinglePageSession
 from flask import request, make_response
 from app import app
 from app import db
@@ -73,6 +73,24 @@ def list_netflix_lolomo_for_user_for_lolomo_id(extension_id, single_page_session
                         ])
 
     return make_response(res, 200)
+
+@app.route("/<extension_id>/netflix/sps", methods=['POST'])
+def post_single_page_session(extension_id):
+    u = db.session.query(User).filter_by(extension_id=extension_id).first()
+    if u is None:
+        return make_response("NO SUCH extension_id REGISTERED", 404)
+    payload = request.get_json()
+
+    n = SinglePageSession(user=u,
+                          id=payload.get("single_page_session", None),
+                          width=payload.get("single_page_session", None),
+                          height=payload.get("single_page_session", None),
+               )
+
+    db.session.add(n)
+
+    db.session.commit()
+    return make_response("CREATED", 201)
 
 
 @app.route("/<extension_id>/netflix/watches", methods=['GET'])
