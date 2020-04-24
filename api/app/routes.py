@@ -15,7 +15,7 @@ def list_netflix_for_user(extension_id):
 
 @app.route("/<extension_id>/netflix/logs", methods=['GET'])
 def list_netflix_logs_for_user(extension_id):
-    q = (db.session.query(User, NetflixSuggestMetadata)
+    q = (db.session.query(User, NetflixSuggestMetadata).order_by(NetflixSuggestMetadata.timestamp)
          .filter(User.id == NetflixSuggestMetadata.user_id)
          .filter(User.extension_id == extension_id))
 
