@@ -1,4 +1,4 @@
-from app.models import StreamLog, User, NetflixSuggestMetadata, NetflixWatchMetadata, Lolomo
+from app.models import StreamLog, User, NetflixSuggestMetadata, NetflixWatchMetadata, Lolomo, UserMetaData
 from flask import request, make_response
 from app import app
 from app import db
@@ -22,13 +22,13 @@ def list_netflix_logs_for_user(extension_id):
     res = "<html><body>#timestamp;ip;content_id;location;row;rank;app_view<br>"
     for _, suggest in q.all():
         res += "".join([("{};\t" * 8 + "<a href='{}'>{}</a>;" + "<br>").format(suggest.timestamp, suggest.ip,
-                                                                                suggest.video_id, suggest.track_id,
-                                                                                suggest.location,
-                                                                                suggest.row, suggest.rank,
-                                                                                suggest.appView,
-                                                                                "/"+extension_id + "/netflix/lolomos/" + suggest.single_page_session_id,
-                                                                                suggest.single_page_session_id)])
-    res+="</body></html>"
+                                                                               suggest.video_id, suggest.track_id,
+                                                                               suggest.location,
+                                                                               suggest.row, suggest.rank,
+                                                                               suggest.appView,
+                                                                               "/" + extension_id + "/netflix/lolomos/" + suggest.single_page_session_id,
+                                                                               suggest.single_page_session_id)])
+    res += "</body></html>"
 
     return make_response(res, 200)
 
@@ -55,12 +55,11 @@ def list_netflix_lolomo_for_user(extension_id):
 
 @app.route("/<extension_id>/netflix/lolomos/latest", methods=['GET'])
 def list_netflix_lolomo_latest_for_user(extension_id):
+    lolo = db.session.query(User, Lolomo).order_by(Lolomo.timestamp.desc()).filter(User.id == Lolomo.user_id).filter(
+        User.extension_id == extension_id).first()[1]
 
-
-    lolo = db.session.query(User,Lolomo).order_by(Lolomo.timestamp.desc()).filter(User.id == Lolomo.user_id).filter(User.extension_id == extension_id).first()[1]
-    
-    
-    q = db.session.query(Lolomo).filter(Lolomo.single_page_session_id == lolo.single_page_session_id).order_by(Lolomo.timestamp,Lolomo.rank)
+    q = db.session.query(Lolomo).filter(Lolomo.single_page_session_id == lolo.single_page_session_id).order_by(
+        Lolomo.timestamp, Lolomo.rank)
 
     res = "#timestamp;ip;rank;type;associated_content;full_text_description;single_page_session_id<br>"
     for lolomo in q.all():
@@ -74,7 +73,6 @@ def list_netflix_lolomo_latest_for_user(extension_id):
                         ])
 
     return make_response(res, 200)
-
 
 
 @app.route("/<extension_id>/netflix/lolomos/<single_page_session_id>", methods=['GET'])
@@ -119,16 +117,20 @@ def list_active_users():
     out = "\n".join(
         ["<a href='" + u.extension_id + "/netflix/logs' > " + u.extension_id + "(" + str(
             len(u.suggestions)) + " entries)" + "</a><br>" for u in
-         db.session.query(User).all() if len(u.suggestions) > 0])
+         db.session.query(User).limit(request.args.get("limit",10))])
     return make_response(out, 200)
 
 
 @app.route("/users", methods=['GET'])
 def list_users():
+    q=db.session.query(User,UserMetaData).filter(User.id==UserMetaData.user_id)
+    for key in request.args:
+        q=q.filter(UserMetaData.key==key).filter(UserMetaData.value==request.args.get(key))
+
     out = "\n".join(
         ["<a href='" + u.extension_id + "/netflix/logs' > " + u.extension_id + "(" + str(
-            len(u.suggestions)) + " entries)" + "</a><br>" for u in
-         db.session.query(User).all()])
+            len(u.suggestions)) + " entries)" + "</a><br>" for u,_ in
+         q.all()])
     return make_response(out, 200)
 
 
@@ -257,3 +259,23 @@ def add_log_for_user(extension_id, content_id):
     db.session.add(s)
     db.session.commit()
     return make_response("CREATED {} {}".format(s.content_id, u.extension_id), 201)
+
+
+@app.route("/<extension_id>/metadata", methods=["POST"])
+def add_user_metadata(extension_id):
+    u = db.session.query(User).filter_by(extension_id=extension_id).first()
+    if u is None:
+        return make_response("NO SUCH extension_id REGISTERED", 404)
+    for key in request.args:
+        already_present_meta = db.session.query(UserMetaData).filter_by(user_id=u.id).filter_by(key=key).first()
+        if already_present_meta is not None:
+            already_present_meta.value = request.args.get(key)
+        else:
+            m = UserMetaData(user=u, key=key, value=request.args.get(key))
+            db.session.add(m)
+    db.session.commit()
+    return make_response("ADDED Metadata", 201)
+
+@app.route("/set_robot", methods=["GET"])
+def set_robot_plugin_hack():
+    return make_response("robot",200)

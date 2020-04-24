@@ -12,6 +12,12 @@ init:
 	flask db init 
 	flask db migrate 
 	flask db upgrade 
+
+update:
+	export FLASK_APP=./sniffer_api.py
+	flask db migrate 
+	flask db upgrade 
+
 run: 
 	export FLASK_APP=./sniffer_api.py
 	flask db migrate 

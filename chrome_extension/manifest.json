@@ -31,6 +31,11 @@
       {
         "matches": ["https://*.netflix.com/*"],
         "js": ["global.js","netflix_lib.js","netflix.js"]
+      },
+      {
+        "matches": ["https://streaming-sniffer-api.nextnet.top/set_robot","http://localhost:5000/set_robot"],
+        "js": ["global.js","emns.js"]
       }
+      
     ]
   }

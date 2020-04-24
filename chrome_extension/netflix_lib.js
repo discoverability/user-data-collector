@@ -23,57 +23,63 @@ function handle_lolomo(uuid,lolomo_node){
     //regexp used to understand the reason for the lolomo
     var genre_parser_regexp=new RegExp("/browse/([a-zA-Z]+)/([0-9]+)","i");
     //the page lolomo container, used to get this lolomo rank
-    var lolomo_container=document.querySelector("div.lolomo");
+    
 
-    //if the lolomo_container is not already present, skip
-    if(lolomo_container!=null){
+    
+
+    //rank of the lolomo in the page
+    var lolomo_row = lolomo_node.querySelector("div.rowContainer");
+    if( lolomo_row !=null ){
+        var lolomo_index = parseInt(lolomo_row.getAttribute("id").split("-")[1]);
+
         //type of lolomo
         var lolomo_data_list_context = lolomo_node.getAttribute("data-list-context");
-        //rank of the lolomo in the page
-        var lolomo_index = Array.prototype.indexOf.call(lolomo_container.children, lolomo_node);
+        
+        
 
         //when associated with another content, there's a link in the lolomo
         let lolomo_link = lolomo_node.querySelector("h2 a");
         if(lolomo_link!=null){
-            //if there's a link
-            //extract the full text version of the lolomo
-            let lolomo_full_text_title = lolomo_link.getAttribute("aria-label");
-            //extract the link to the other content associated with the lolomo
-            let lolomo_associated_content_href = lolomo_link.getAttribute("href");
-            //extract data for associated content        
-            let lolomo_associated_content_data = genre_parser_regexp.exec(lolomo_associated_content_href);
-            if(lolomo_associated_content_data==null){
-                //we are not able to extract data from the link
+                //if there's a link
+                //extract the full text version of the lolomo
+                let lolomo_full_text_title = lolomo_link.getAttribute("aria-label");
+                //extract the link to the other content associated with the lolomo
+                let lolomo_associated_content_href = lolomo_link.getAttribute("href");
+                //extract data for associated content        
+                let lolomo_associated_content_data = genre_parser_regexp.exec(lolomo_associated_content_href);
+                if(lolomo_associated_content_data==null){
+                    //we are not able to extract data from the link
+                    send_tracking_lolomo_telemetry(uuid,lolomo_index,lolomo_data_list_context,"",lolomo_full_text_title);
+                }
+                else{
+                let lolomo_association_type = lolomo_associated_content_data[1];
+                let lolomo_associated_content_id = lolomo_associated_content_data[2];
+                send_tracking_lolomo_telemetry(uuid,lolomo_index,lolomo_association_type,lolomo_associated_content_id,lolomo_full_text_title);
+                }
+                
+            }
+            else if (lolomo_data_list_context=="genre"){
+                //special case if lolomot is a genra with no associated link
+                let lolomo_full_text_title = lolomo_node.querySelector("h2 span div").innerHTML;
+
                 send_tracking_lolomo_telemetry(uuid,lolomo_index,lolomo_data_list_context,"",lolomo_full_text_title);
             }
-            else{
-            let lolomo_association_type = lolomo_associated_content_data[1];
-            let lolomo_associated_content_id = lolomo_associated_content_data[2];
-            send_tracking_lolomo_telemetry(uuid,lolomo_index,lolomo_association_type,lolomo_associated_content_id,lolomo_full_text_title);
+            else if(lolomo_data_list_context=="bigRow"){
+                //special case if lolomo is a big row: we need to extract the content id from an internal div
+                var bigrow=lolomo_node.querySelector("div.ptrack-content");
+                var data_ui_tracking_context = JSON.parse(decodeURIComponent(bigrow.getAttribute("data-ui-tracking-context")));
+                var video_id=data_ui_tracking_context.video_id;
+                //console.log(uuid+":"+lolomo_index+":"+lolomo_data_list_context+":"+video_id+":None");
+
+                send_tracking_lolomo_telemetry(uuid,lolomo_index,lolomo_data_list_context,video_id,"");
+
             }
-            
-        }
-        else if (lolomo_data_list_context=="genre"){
-            //special case if lolomot is a genra with no associated link
-            let lolomo_full_text_title = lolomo_node.querySelector("h2 span div").innerHTML;
-
-            send_tracking_lolomo_telemetry(uuid,lolomo_index,lolomo_data_list_context,"",lolomo_full_text_title);
-        }
-        else if(lolomo_data_list_context=="bigRow"){
-            //special case if lolomo is a big row: we need to extract the content id from an internal div
-            var bigrow=lolomo_node.querySelector("div.ptrack-content");
-            var data_ui_tracking_context = JSON.parse(decodeURIComponent(bigrow.getAttribute("data-ui-tracking-context")));
-            var video_id=data_ui_tracking_context.video_id;
-            //console.log(uuid+":"+lolomo_index+":"+lolomo_data_list_context+":"+video_id+":None");
-
-            send_tracking_lolomo_telemetry(uuid,lolomo_index,lolomo_data_list_context,video_id,"");
-
-        }
-        else{
-            send_tracking_lolomo_telemetry(uuid,lolomo_index,lolomo_data_list_context,"","");
-            
-        }
+            else{
+                send_tracking_lolomo_telemetry(uuid,lolomo_index,lolomo_data_list_context,"","");
+                
+            }
     }
+
     //handle thumbnail behind the lolomo
     for (let slider of lolomo_node.querySelectorAll(".slider-item")) {
         if (isSliderItemShow(slider)) {
