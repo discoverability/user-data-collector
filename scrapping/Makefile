@@ -9,9 +9,10 @@ bootstrap:
 clean:
 	rm -f ../chrome_extension.pem
 	rm -f ../chrome_extension.crx
+	rm -f ./chrome_extension.crx
 pack: clean
 	cd .. && google-chrome-stable --pack-extension=chrome_extension |true 
 	cp ../chrome_extension.crx .
 
 run: pack
-	ruby scraperUA2.rb
+	./runall.sh

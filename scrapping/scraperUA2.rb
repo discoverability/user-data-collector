@@ -8,7 +8,7 @@ scheduler = Rufus::Scheduler.new
 
 options = Selenium::WebDriver::Chrome::Options.new(args: ['--blink-settings=imagesEnabled=false'])
 
-options.add_extension('../chrome_extension.crx')
+options.add_extension('./chrome_extension.crx')
 
 browser = Watir::Browser.new :chrome, options: options
 
