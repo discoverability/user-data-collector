@@ -35,7 +35,7 @@ def list_netflix_logs_for_user(extension_id):
 
 @app.route("/<extension_id>/netflix/lolomos", methods=['GET'])
 def list_netflix_lolomo_for_user(extension_id):
-    q = (db.session.query(User, Lolomo)
+    q = (db.session.query(User, Lolomo).order_by(Lolomo.timestamp)
          .filter(User.id == Lolomo.user_id)
          .filter(User.extension_id == extension_id))
 
@@ -53,9 +53,33 @@ def list_netflix_lolomo_for_user(extension_id):
     return make_response(res, 200)
 
 
+@app.route("/<extension_id>/netflix/lolomos/latest", methods=['GET'])
+def list_netflix_lolomo_latest_for_user(extension_id):
+
+
+    lolo = db.session.query(User,Lolomo).order_by(Lolomo.timestamp.desc()).filter(User.id == Lolomo.user_id).filter(User.extension_id == extension_id).first()[1]
+    
+    
+    q = db.session.query(Lolomo).filter(Lolomo.single_page_session_id == lolo.single_page_session_id).order_by(Lolomo.timestamp,Lolomo.rank)
+
+    res = "#timestamp;ip;rank;type;associated_content;full_text_description;single_page_session_id<br>"
+    for lolomo in q.all():
+        res += "".join([("{};\t" * 7 + "<br>").format(lolomo.timestamp, lolomo.ip,
+                                                      lolomo.rank,
+                                                      lolomo.type,
+                                                      lolomo.associated_content,
+                                                      lolomo.full_text_description.encode('utf-8').strip(),
+                                                      lolomo.single_page_session_id)
+
+                        ])
+
+    return make_response(res, 200)
+
+
+
 @app.route("/<extension_id>/netflix/lolomos/<single_page_session_id>", methods=['GET'])
 def list_netflix_lolomo_for_user_for_lolomo_id(extension_id, single_page_session_id):
-    q = (db.session.query(User, Lolomo)
+    q = (db.session.query(User, Lolomo).order_by(Lolomo.timestamp)
          .filter(User.id == Lolomo.user_id)
          .filter(User.extension_id == extension_id)
          .filter(Lolomo.single_page_session_id == single_page_session_id)
