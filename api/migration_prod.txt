@@ -1,0 +1,11 @@
++to migrate data in production, do the following:
++
++
++- log a root
++- pull the new version from git
++- run flask db migration procedure:
++  - export FLASK_APP=app
++  - export APP_ENV="production"
++  - flask db migrate 
++  - flask db upgrade
+
