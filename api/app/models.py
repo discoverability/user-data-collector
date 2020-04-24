@@ -61,7 +61,7 @@ class NetflixSuggestMetadata(StreamLog):
     id = db.Column(db.ForeignKey("log.id"), primary_key=True)
 
     location = db.Column(db.String(512))
-    image_key = db.Column(db.String(64))
+    image_key = db.Column(db.String(128))
     supp_video_id = db.Column(db.Integer)
 
     maturityMisMatchEdgy = db.Column(db.Boolean)
