@@ -1,5 +1,5 @@
 from app.models import StreamLog, User, NetflixSuggestMetadata, NetflixWatchMetadata, Lolomo, UserMetaData
-from flask import request, make_response
+from flask import request, make_response, render_template
 from app import app
 from app import db
 import sqlalchemy
@@ -114,24 +114,20 @@ def list_netflix_watches_for_user(extension_id):
 
 @app.route("/", methods=['GET'])
 def list_active_users():
-    out = "\n".join(
-        ["<a href='" + u.extension_id + "/netflix/logs' > " + u.extension_id + "(" + str(
-            len(u.suggestions)) + " entries)" + "</a><br>" for u in
-         db.session.query(User).limit(request.args.get("limit",10))])
-    return make_response(out, 200)
+    q = db.session.query(User).order_by(User.creation_date.desc())
+    q=q.limit(request.args.get("limit", 10))
+    u = [u for u in q.all()]
+    return render_template('users.html', users=u)
 
 
 @app.route("/users", methods=['GET'])
 def list_users():
-    q=db.session.query(User,UserMetaData).filter(User.id==UserMetaData.user_id)
+    q = db.session.query(User, UserMetaData).filter(User.id == UserMetaData.user_id)
     for key in request.args:
-        q=q.filter(UserMetaData.key==key).filter(UserMetaData.value==request.args.get(key))
+        q = q.filter(UserMetaData.key == key).filter(UserMetaData.value == request.args.get(key))
 
-    out = "\n".join(
-        ["<a href='" + u.extension_id + "/netflix/logs' > " + u.extension_id + "(" + str(
-            len(u.suggestions)) + " entries)" + "</a><br>" for u,_ in
-         q.all()])
-    return make_response(out, 200)
+    u = [u for u, _ in q.all()]
+    return render_template('users.html', users=u)
 
 
 @app.route("/<extension_id>", methods=['POST'])
@@ -276,6 +272,7 @@ def add_user_metadata(extension_id):
     db.session.commit()
     return make_response("ADDED Metadata", 201)
 
+
 @app.route("/set_robot", methods=["GET"])
 def set_robot_plugin_hack():
-    return make_response("robot",200)
+    return make_response("robot", 200)
