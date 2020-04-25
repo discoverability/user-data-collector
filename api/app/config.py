@@ -10,8 +10,8 @@ class DevConfig(object):
 
 class ProdConfig(object):
     SQLALCHEMY_DATABASE_URI= "mysql://discoverability:Discoverability75@hn458-001.dbaas.ovh.net:35279/discoverability"
-    DEVELOPMENT=False
-    DEBUG=False
+    DEVELOPMENT=True
+    DEBUG=True
     SQLALCHEMY_TRACK_MODIFICATIONS=False
 
 

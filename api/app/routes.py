@@ -143,12 +143,12 @@ def list_active_users():
 @app.route("/users", methods=['GET'])
 def list_users():
     guard_ip(request.remote_addr)
-    q = db.session.query(User).outerjoin(UserMetaData).filter(User.id == UserMetaData.user_id)
+    q = db.session.query(User,UserMetaData).filter(User.id == UserMetaData.user_id)
     for key in request.args:
         q = q.filter(UserMetaData.key == key).filter(UserMetaData.value == request.args.get(key))
 
-    u = [u for u, _ in q.all()]
-    return render_template('users.html', users=u)
+    users = [u for u, _ in q.all()]
+    return render_template('users.html', users=users    )
 
 
 
