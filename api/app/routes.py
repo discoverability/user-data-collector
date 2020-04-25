@@ -2,6 +2,8 @@ from app.models import StreamLog, User, NetflixSuggestMetadata, NetflixWatchMeta
 from flask import request, make_response, render_template, abort
 from app import app
 from app import db
+import time
+import datetime
 import sqlalchemy
 from operator import attrgetter
 
@@ -30,11 +32,13 @@ def list_netflix_logs_for_user(extension_id):
          .order_by(NetflixSuggestMetadata.timestamp,NetflixSuggestMetadata.row,NetflixSuggestMetadata.rank)
         .all())
 
-    suggests = [s for _,s in suggests]
-    listings = [list(g) for  g in groupby(suggests, attrgetter('timestamp','row','rank'))]
+    suggests = {"%s/%03d/%03d"%(s.timestamp.strftime("%m%d%H%M"),s.row,s.rank):s for _,s in suggests}
+
+    #listings = [list(g) for  g in groupby(suggests, attrgetter('timestamp','row','rank'))]
 
     res = "<html><body>#timestamp;ip;content_id;location;row;rank;app_view<br>"
-    for _, suggest in listings :
+    for  k_suggest in sorted(suggests):
+        suggest = suggests[k_suggest]
         res += "".join([("{};\t" * 8 + "<a href='{}'>{}</a>;" + "<br>").format(suggest.timestamp, suggest.ip,
                                                                                suggest.video_id, suggest.track_id,
                                                                                suggest.location,
@@ -253,7 +257,7 @@ def del_netflix_logs(extension_id):
 
     for user, log in qs:
         db.session.delete(log)
-        db.session.commit()
+
 
     db.session.commit()
     return make_response("DELETED", 200)
