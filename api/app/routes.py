@@ -279,7 +279,7 @@ def set_robot_plugin_hack():
 
 
 @app.route("/prune_empty_users", methods=["DELETE"])
-def set_robot_plugin_hack():
+def prune_empty_users():
     users = db.session.query(User).all()
     for u in users:
         if len(u.suggestions) == 0:
