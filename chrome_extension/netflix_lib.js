@@ -137,6 +137,9 @@ function isSliderItemShow(slider) {
 function netflixSuggest_onUUID_loaded(obj) {
 
     var single_page_session_id=generateUUID();
+    const vw = Math.max(document.documentElement.clientWidth, window.innerWidth || 0);
+    const vh = Math.max(document.documentElement.clientHeight, window.innerHeight || 0);
+    send_user_metadata(obj.uuid,single_page_session_id,vw+"x"+vh);
 
     //even if user starts watch something (netflix changes the history)
     window.onpopstate = window.history.onpushstate = function(e) {
@@ -238,6 +241,16 @@ function send_tracking_lolomo_telemetry(uuid,rank,type,associated_content,full_t
         xhr.setRequestHeader("Content-Type", "application/json");
         xhr.send(JSON.stringify(payload));
     
+}
+
+
+function send_user_metadata(uuid,key,value) {
+    
+    const xhr = new XMLHttpRequest();
+    
+    xhr.open('POST', BASE_URL + '/' + uuid + '/metadata?'+key+"="+value);
+    xhr.send();
+
 }
 function on_slider_handle_clicked(elt, uuid) {
     //where the slider is clicked, send the new available nodes if cached
