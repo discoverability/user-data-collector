@@ -17,7 +17,7 @@ def list_netflix_for_user(extension_id):
 def list_netflix_logs_for_user(extension_id):
     q = (db.session.query(User, NetflixSuggestMetadata).order_by(NetflixSuggestMetadata.timestamp)
          .filter(User.id == NetflixSuggestMetadata.user_id)
-         .filter(User.extension_id == extension_id))
+         .filter(User.extension_id == extension_id)).order_by(NetflixSuggestMetadata.timestamp,NetflixSuggestMetadata.row,NetflixSuggestMetadata.rank)
 
     res = "<html><body>#timestamp;ip;content_id;location;row;rank;app_view<br>"
     for _, suggest in q.all():
