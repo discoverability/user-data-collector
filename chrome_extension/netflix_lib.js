@@ -18,26 +18,30 @@ function netflixWatch_parseWatchData(){
     
     return payload;
 }
-
+function handle_billboard(uuid){
+    var billBoardTracker = document.querySelector(".billboard-row .ptrack-content");
+    send_traking_suggest_telemetry(billBoardTracker, uuid);
+}
 function handle_lolomo(uuid,lolomo_node){
+    
     //regexp used to understand the reason for the lolomo
     var genre_parser_regexp=new RegExp("/browse/([a-zA-Z]+)/([0-9]+)","i");
     //the page lolomo container, used to get this lolomo rank
     
 
-    console.log(lolomo_node.classList);
+    
 
     //rank of the lolomo in the page
     var lolomo_row = lolomo_node.querySelector("div.rowContainer");
 
-    console.log("1." + lolomo_row);
+    
 
     //if it's a big row;
     if(lolomo_row==null){
         lolomo_row = lolomo_node.querySelector("div.bigRow");
     }
 
-    console.log("2." + lolomo_row);
+    
 
     if( lolomo_row !=null ){
         var lolomo_index = parseInt(lolomo_row.getAttribute("id").split("-")[1]);
@@ -75,7 +79,7 @@ function handle_lolomo(uuid,lolomo_node){
                 send_tracking_lolomo_telemetry(uuid,lolomo_index,lolomo_data_list_context,"",lolomo_full_text_title);
             }
             else if(lolomo_data_list_context=="bigRow"){
-                console.log("big row special case");
+                
                 //special case if lolomo is a big row: we need to extract the content id from an internal div
                 var bigrow=lolomo_node.querySelector("div.ptrack-content");
                 var data_ui_tracking_context = JSON.parse(decodeURIComponent(bigrow.getAttribute("data-ui-tracking-context")));
@@ -134,6 +138,19 @@ function isSliderItemShow(slider) {
     return false;
 }
 
+function handle_static_lolomo(uuid){
+
+        //load lolomo that are already present
+        var lolomo_container = document.querySelector("div.lolomo");
+        //check if lolomos are present on the page
+        if(lolomo_container!=null){
+            //loop on all the lolomos, to extract info
+            for(let lolomo of document.querySelector("div.lolomo").children){
+                handle_lolomo(uuid,lolomo);
+            }
+        }
+}
+
 function netflixSuggest_onUUID_loaded(obj) {
 
     var single_page_session_id=generateUUID();
@@ -142,20 +159,14 @@ function netflixSuggest_onUUID_loaded(obj) {
     send_user_metadata(obj.uuid,single_page_session_id,vw+"x"+vh);
 
     //even if user starts watch something (netflix changes the history)
-    window.onpopstate = window.history.onpushstate = function(e) {
-        console.log(e);
+    
+    window.pageshow = window.onpushstate = window.history.onpushstate = function(e) {
+        
+        handle_static_lolomo(obj.uuid);
     }
 
-    //load lolomo that are already present
-    var lolomo_container = document.querySelector("div.lolomo");
-    //check if lolomos are present on the page
-    if(lolomo_container!=null){
-        //loop on all the lolomos, to extract info
-        for(let lolomo of document.querySelector("div.lolomo").children){
-            handle_lolomo(obj.uuid,lolomo);
-        }
-    }
-    console.log("dynamic lolomos");
+    handle_static_lolomo(obj.uuid);
+    
     // identify an element to observe
     var elementToObserve = document.querySelector("body");
 
@@ -168,8 +179,18 @@ function netflixSuggest_onUUID_loaded(obj) {
         for (let mutation of mutationRecs) {
             //get the new nodes
             for (let addedNode of mutation.addedNodes) {
+
+                if(addedNode.classList && addedNode.classList.contains("pageTransition-enter")){
+                    window.setTimeout ( function() { handle_static_lolomo(obj.uuid); }, 1000);
+                    window.setTimeout ( function() { handle_billboard(obj.uuid); }, 1000);
+                }
+
+
+                else if(addedNode.classList && addedNode.classList.contains("lolomo")  && addedNode.classList.contains("is-fullbleed")){
+                    handle_static_lolomo(obj.uuid);
+                }
                 //if the new node is a lolomo, handle it
-                if (addedNode.classList && addedNode.classList.contains("lolomoRow")) {
+                else if (addedNode.classList && addedNode.classList.contains("lolomoRow")) {
                     handle_lolomo(obj.uuid,addedNode);
                 } else if (addedNode.classList && addedNode.classList.contains("AkiraPlayer") && addedNode.children.length>0) {
                     //if the new node is a player, handle it
@@ -194,8 +215,7 @@ function netflixSuggest_onUUID_loaded(obj) {
     //no dynamically added uppon scrolling
 
     //the billboard
-    var billBoardTracker = document.querySelector(".billboard-row .ptrack-content");
-    send_traking_suggest_telemetry(billBoardTracker, obj.uuid);
+    handle_billboard(obj.uuid)
 
     //the big rows
     for (let bigrow of document.querySelectorAll(".bigRowItem .ptrack-content")) {
