@@ -88,6 +88,14 @@ function handle_lolomo(uuid,lolomo_node){
 
         }
     }
+
+     //handle thumbnail behind the lolomo
+     for (let bigrow of lolomo_node.querySelectorAll(".bigRow")) {
+            var tracker = bigrow.querySelector(".ptrack-content");
+            send_traking_suggest_telemetry(tracker, uuid, rank_shift = 0)
+
+        
+    }
     //register click listner when browsing lolomo's content
     for (let handle of lolomo_node.querySelectorAll("span.handle")) {
         handle.addEventListener("click", elt => on_slider_handle_clicked(elt, uuid));
