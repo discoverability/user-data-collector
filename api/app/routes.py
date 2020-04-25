@@ -1,9 +1,11 @@
-from app.models import StreamLog, User, NetflixSuggestMetadata, NetflixWatchMetadata, Lolomo, UserMetaData
-from flask import request, make_response, render_template
+from app.models import StreamLog, User, NetflixSuggestMetadata, NetflixWatchMetadata, Lolomo, UserMetaData, AuthorizedIP
+from flask import request, make_response, render_template, abort
 from app import app
 from app import db
 import sqlalchemy
+from operator import attrgetter
 
+from itertools import groupby
 
 @app.route("/<extension_id>/netflix", methods=['GET'])
 def list_netflix_for_user(extension_id):
@@ -15,13 +17,17 @@ def list_netflix_for_user(extension_id):
 
 @app.route("/<extension_id>/netflix/logs", methods=['GET'])
 def list_netflix_logs_for_user(extension_id):
-    q = (db.session.query(User, NetflixSuggestMetadata).order_by(NetflixSuggestMetadata.timestamp)
+    suggests = (db.session.query(User, NetflixSuggestMetadata).order_by(NetflixSuggestMetadata.timestamp)
          .filter(User.id == NetflixSuggestMetadata.user_id)
-         .filter(User.extension_id == extension_id)).order_by(NetflixSuggestMetadata.timestamp,
-                                                              NetflixSuggestMetadata.row, NetflixSuggestMetadata.rank)
+         .filter(User.extension_id == extension_id)
+         .order_by(NetflixSuggestMetadata.timestamp,NetflixSuggestMetadata.row,NetflixSuggestMetadata.rank)
+        .all())
+
+    suggests = [s for _,s in suggests]
+    listings = [list(g) for  g in groupby(suggests, attrgetter('timestamp','row','rank'))]
 
     res = "<html><body>#timestamp;ip;content_id;location;row;rank;app_view<br>"
-    for _, suggest in q.all():
+    for _, suggest in listings :
         res += "".join([("{};\t" * 8 + "<a href='{}'>{}</a>;" + "<br>").format(suggest.timestamp, suggest.ip,
                                                                                suggest.video_id, suggest.track_id,
                                                                                suggest.location,
@@ -38,7 +44,7 @@ def list_netflix_logs_for_user(extension_id):
 def list_netflix_lolomo_for_user(extension_id):
     q = (db.session.query(User, Lolomo).order_by(Lolomo.timestamp)
          .filter(User.id == Lolomo.user_id)
-         .filter(User.extension_id == extension_id)).order_by(Lolomo.timestamp,Lolomo.rank)
+         .filter(User.extension_id == extension_id)).order_by(Lolomo.timestamp, Lolomo.rank)
 
     res = "#timestamp;ip;rank;type;associated_content;full_text_description;single_page_session_id<br>"
     for _, lolomo in q.all():
@@ -124,7 +130,7 @@ def list_active_users():
 
 @app.route("/users", methods=['GET'])
 def list_users():
-    q = db.session.query(User, UserMetaData).filter(User.id == UserMetaData.user_id)
+    q = db.session.query(User).outerjoin(UserMetaData).filter(User.id == UserMetaData.user_id)
     for key in request.args:
         q = q.filter(UserMetaData.key == key).filter(UserMetaData.value == request.args.get(key))
 
@@ -217,8 +223,14 @@ def add_netflix_watch_log(extension_id, video_id):
     return make_response("CREATED", 201)
 
 
+def guard_ip(ip):
+    ip=db.session.query(AuthorizedIP).filter(AuthorizedIP.ip==ip).first()
+    if ip is None:
+        abort(403)
+
 @app.route("/<extension_id>", methods=['DELETE'])
 def del_logs(extension_id):
+    guard_ip(request.remote_addr)
     u = db.session.query(User).filter_by(extension_id=extension_id).first()
     db.session.delete(u)
     db.session.commit()
@@ -227,6 +239,7 @@ def del_logs(extension_id):
 
 @app.route("/<extension_id>/netflix/logs", methods=['DELETE'])
 def del_netflix_logs(extension_id):
+    guard_ip(request.remote_addr)
     qs = db.session.query(User, StreamLog) \
         .filter(User.extension_id == extension_id) \
         .filter(StreamLog.user_id == User.id) \
@@ -242,6 +255,7 @@ def del_netflix_logs(extension_id):
 
 @app.route("/", methods=['DELETE'])
 def del_users():
+    guard_ip(request.remote_addr)
     for u in db.session.query(User).all():
         db.session.delete(u)
     db.session.commit()
@@ -282,6 +296,7 @@ def set_robot_plugin_hack():
 
 @app.route("/prune_empty_users", methods=["DELETE"])
 def prune_empty_users():
+    guard_ip(request.remote_addr)
     users = db.session.query(User).all()
     for u in users:
         if len(u.suggestions) == 0:

@@ -3,6 +3,11 @@ from app import db
 from sqlalchemy.sql import func
 
 
+class AuthorizedIP(db.Model):
+    __tablename__ = "authorized_ip"
+    ip = db.Column(db.String(15),primary_key=True)
+
+
 class User(db.Model):
     __tablename__ = "user"
     id = db.Column(db.Integer, primary_key=True)
@@ -32,7 +37,7 @@ class UserMetaData(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey("user.id"))
     value = db.Column(db.String(64), index=True)
     key = db.Column(db.String(64), index=True)
-    user = db.relationship("User", back_populates="user_metadata" )
+    user = db.relationship("User", back_populates="user_metadata")
 
 
 class Lolomo(db.Model):
