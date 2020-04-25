@@ -115,7 +115,7 @@ def list_netflix_watches_for_user(extension_id):
 @app.route("/", methods=['GET'])
 def list_active_users():
     q = db.session.query(User).order_by(User.creation_date.desc())
-    q=q.limit(request.args.get("limit", 10))
+    q = q.limit(request.args.get("limit", 10))
     u = [u for u in q.all()]
     return render_template('users.html', users=u)
 
@@ -276,3 +276,13 @@ def add_user_metadata(extension_id):
 @app.route("/set_robot", methods=["GET"])
 def set_robot_plugin_hack():
     return make_response("robot", 200)
+
+
+@app.route("/prune_empty_users", methods=["DELETE"])
+def set_robot_plugin_hack():
+    users = db.session.query(User).all()
+    for u in users:
+        if len(u.suggestions) == 0:
+            db.session.delete(u)
+    db.session.commit()
+    return make_response("DELETED", 200)
