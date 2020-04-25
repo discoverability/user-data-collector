@@ -29,10 +29,8 @@ chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
 chrome.storage.sync.get("uuid", function (obj) {
   document.getElementById('uuidCreated').innerText = obj.uuid;
   document.querySelector("#logslink a").onclick = function () {
-    chrome.tabs.create({active: true, url: BASE_URL+"/"+obj.uuid+"/netflix/logs"});
+    chrome.tabs.create({active: true, url: BASE_URL+"/"+obj.uuid});
   };
 
-  document.querySelector("#serverlinks a").onclick = function () {
-    chrome.tabs.create({active: true, url: BASE_URL});
-  };
+ 
 });
