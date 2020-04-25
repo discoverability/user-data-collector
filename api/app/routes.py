@@ -17,7 +17,8 @@ def list_netflix_for_user(extension_id):
 def list_netflix_logs_for_user(extension_id):
     q = (db.session.query(User, NetflixSuggestMetadata).order_by(NetflixSuggestMetadata.timestamp)
          .filter(User.id == NetflixSuggestMetadata.user_id)
-         .filter(User.extension_id == extension_id)).order_by(NetflixSuggestMetadata.timestamp,NetflixSuggestMetadata.row,NetflixSuggestMetadata.rank)
+         .filter(User.extension_id == extension_id)).order_by(NetflixSuggestMetadata.timestamp,
+                                                              NetflixSuggestMetadata.row, NetflixSuggestMetadata.rank)
 
     res = "<html><body>#timestamp;ip;content_id;location;row;rank;app_view<br>"
     for _, suggest in q.all():
@@ -37,7 +38,7 @@ def list_netflix_logs_for_user(extension_id):
 def list_netflix_lolomo_for_user(extension_id):
     q = (db.session.query(User, Lolomo).order_by(Lolomo.timestamp)
          .filter(User.id == Lolomo.user_id)
-         .filter(User.extension_id == extension_id))
+         .filter(User.extension_id == extension_id)).order_by(Lolomo.timestamp,Lolomo.rank)
 
     res = "#timestamp;ip;rank;type;associated_content;full_text_description;single_page_session_id<br>"
     for _, lolomo in q.all():
@@ -81,6 +82,7 @@ def list_netflix_lolomo_for_user_for_lolomo_id(extension_id, single_page_session
          .filter(User.id == Lolomo.user_id)
          .filter(User.extension_id == extension_id)
          .filter(Lolomo.single_page_session_id == single_page_session_id)
+         .order_by(Lolomo.timestamp, Lolomo.rank)
          )
 
     res = "#timestamp;ip;rank;type;associated_content;full_text_description;single_page_session_id<br>"
