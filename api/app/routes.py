@@ -151,6 +151,16 @@ def list_users():
     return render_template('users.html', users=u)
 
 
+
+@app.route("/<extension_id>", methods=['GET'])
+def get_user_data(extension_id):
+    u = (db.session.query(User).filter(User.extension_id == extension_id).first())
+    if u is None:
+        return abort(404)
+    else:
+        return render_template('user.html', user=u)
+
+
 @app.route("/<extension_id>", methods=['POST'])
 def create_user(extension_id):
     u = User(extension_id=extension_id)

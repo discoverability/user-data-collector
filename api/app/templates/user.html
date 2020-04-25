@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
+          integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.6.3/css/all.css"
+          integrity="sha384-UHRtZLI+pbxtHCWp1t77Bi1L4ZtiqrqD80Kn4Z8NTSRyMA2Fd33n5dQ8lWUE00s/" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://unpkg.com/bootstrap-table@1.16.0/dist/bootstrap-table.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/user.css') }}">
+    <meta charset="UTF-8">
+    <title>Content Discoverability Research</title>
+</head>
+<body>
+<div class="hero-image">
+    <div class="hero-text">
+        <h1>Content Discoverability Research</h1>
+        <p>Access All your Data</p>
+        <button  onclick="location.href='/{{  user.extension_id }}/netflix/logs'" >Netflix Suggestions</button>
+        <button  onclick="location.href='/{{  user.extension_id }}/netflix/lolomos'" >Netflix List of Movies</button>
+        <button  onclick="location.href='/{{  user.extension_id }}/netflix/watches'" >Netflix Watch List</button>
+        <button  onclick="location.href='mailto:nicolas.herbaut@univ-paris1.fr'" >Contact Us</button>
+
+    </div>
+
+</div>
+<img src="{{ url_for('static', filename='img/p1.jpg') }}" id="p1"/>
+</body>
+</html>
