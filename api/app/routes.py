@@ -7,6 +7,13 @@ from operator import attrgetter
 
 from itertools import groupby
 
+
+def guard_ip(ip):
+    ip=db.session.query(AuthorizedIP).filter(AuthorizedIP.ip==ip).first()
+    if ip is None:
+        abort(403)
+
+
 @app.route("/<extension_id>/netflix", methods=['GET'])
 def list_netflix_for_user(extension_id):
     u = db.session.query(User).filter_by(extension_id=extension_id).first()
@@ -122,6 +129,7 @@ def list_netflix_watches_for_user(extension_id):
 
 @app.route("/", methods=['GET'])
 def list_active_users():
+    guard_ip(request.remote_addr)
     q = db.session.query(User).order_by(User.creation_date.desc())
     q = q.limit(request.args.get("limit", 10))
     u = [u for u in q.all()]
@@ -130,6 +138,7 @@ def list_active_users():
 
 @app.route("/users", methods=['GET'])
 def list_users():
+    guard_ip(request.remote_addr)
     q = db.session.query(User).outerjoin(UserMetaData).filter(User.id == UserMetaData.user_id)
     for key in request.args:
         q = q.filter(UserMetaData.key == key).filter(UserMetaData.value == request.args.get(key))
@@ -223,10 +232,7 @@ def add_netflix_watch_log(extension_id, video_id):
     return make_response("CREATED", 201)
 
 
-def guard_ip(ip):
-    ip=db.session.query(AuthorizedIP).filter(AuthorizedIP.ip==ip).first()
-    if ip is None:
-        abort(403)
+
 
 @app.route("/<extension_id>", methods=['DELETE'])
 def del_logs(extension_id):
