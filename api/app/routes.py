@@ -57,8 +57,14 @@ def list_netflix_lolomo_for_user(extension_id):
          .filter(User.id == Lolomo.user_id)
          .filter(User.extension_id == extension_id)).order_by(Lolomo.timestamp, Lolomo.rank)
 
+    lolomos = {"%s/%03d/%s" % (s.timestamp.strftime("%m%d%H%M"), s.rank, s.single_page_session_id): s for _, s in q.all()}
+
+    # listings = [list(g) for  g in groupby(suggests, attrgetter('timestamp','row','rank'))]
+
     res = "#timestamp;ip;rank;type;associated_content;full_text_description;single_page_session_id<br>"
-    for _, lolomo in q.all():
+    for lolomo_k in sorted(lolomos):
+        lolomo= lolomos[lolomo_k]
+
         res += "".join([("{};\t" * 7 + "<br>").format(lolomo.timestamp, lolomo.ip,
                                                       lolomo.rank,
                                                       lolomo.type,
