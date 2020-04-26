@@ -182,9 +182,9 @@ function netflixSuggest_onUUID_loaded(obj) {
             //get the new nodes
             for (let addedNode of mutation.addedNodes) {
 
-                if(addedNode.classList && addedNode.classList.contains("pageTransition-enter")){
-                    window.setTimeout ( function() { handle_static_lolomo(obj.uuid); }, 1000);
-                    window.setTimeout ( function() { handle_billboard(obj.uuid); }, 1000);
+                if(addedNode.classList && addedNode.classList.contains("pageTransition-enter") || addedNode.classList.contains("mainView")){
+                    window.setTimeout ( function() { handle_static_lolomo(obj.uuid); }, 3000);
+                    window.setTimeout ( function() { handle_billboard(obj.uuid); }, 3000);
                 }
 
 
