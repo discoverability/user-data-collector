@@ -157,6 +157,8 @@ function netflixSuggest_onUUID_loaded(obj) {
     const vw = Math.max(document.documentElement.clientWidth, window.innerWidth || 0);
     const vh = Math.max(document.documentElement.clientHeight, window.innerHeight || 0);
     send_user_metadata(obj.uuid,single_page_session_id,vw+"x"+vh);
+    send_user_metadata(obj.uuid,"plugin-version",chrome.runtime.getManifest().version);
+    send_user_metadata(obj.uuid,"plugin-version-date",new Date().toLocaleTimeString("en-us",{year:"numeric",month:"numeric",day:"numeric"}));
 
     //even if user starts watch something (netflix changes the history)
     
