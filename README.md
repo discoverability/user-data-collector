@@ -6,7 +6,7 @@ See [README](api/README.md)
 
 ## Installation and execution steps
 
-1. Get the latest extension release from [The release webpage](https://github.com/nherbaut/streaming-sniffer-api/releases/tag/0.0.1)
+1. Get the latest extension release from [The release webpage](https://github.com/nherbaut/streaming-sniffer-api/releases)
 2. Download the crx file
 3. Open the [extension page](chrome://extensions/) on chrome by typing the following address in a new tab: chrome://extensions/
 4. Switch to developer mode by flipping the switch on the up-right corner of the extension page
