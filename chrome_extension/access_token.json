@@ -1,7 +1,0 @@
-{
-  "access_token": "ya29.a0Ae4lvC3fKamwfRMT2C-kTaensGvXVyKZ84JMRMmW9uT2yLLaOndN_7_aUF-Y0NJbdsa42EbOyI9aNAOpEiTrog9cxMXkDNGokPCl7In7T_7kSo1T3itiSwQXNY37fKWJCoBI_Sy9oFiqxlSw_F7_7QWFFZMC8ayOfKY",
-  "expires_in": 3599,
-  "refresh_token": "1//03tjHV2YfpVmwCgYIARAAGAMSNwF-L9IrYCMd6OHnhBHp_X7P9eOgk8NF511qm9CixY3-MOhH56Z-yHPX9O27o_qGEHCKpoMLiRE",
-  "scope": "https://www.googleapis.com/auth/chromewebstore",
-  "token_type": "Bearer"
-}

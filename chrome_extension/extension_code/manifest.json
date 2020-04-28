@@ -1,15 +1,15 @@
 {
-  "name": "Media Discoverability Research by University Paris 1 Panthéon-Sorbonne EMNS",
-  "version": "1.1.6",
+  "name": "Media Discoverability Research by EMNS",
+  "version": "5.0.6",
   "description": "Media Discoverability Research by Ecole des Médias et du Numérique, Université Paris 1 Panthéon-Sorbonne.",
   "permissions": [
     "activeTab",
     "declarativeContent",
-    "storage",
-    "http://localhost:5000/set_robot"
+    "storage"
   ],
   "background": {
     "scripts": [
+      "server.js",
       "global.js",
       "background.js",
       "options.js"
@@ -39,6 +39,7 @@
         "https://*.netflix.com/*"
       ],
       "js": [
+        "server.js",
         "global.js",
         "netflix_lib.js",
         "netflix.js"
@@ -46,10 +47,11 @@
     },
     {
       "matches": [
-        "https://streaming-sniffer-api.nextnet.top/set_robot",
+        "https://conso-api.vod-prime.space/set_robot",
         "http://localhost:5000/set_robot"
       ],
       "js": [
+        "server.js",
         "global.js",
         "emns.js"
       ]
