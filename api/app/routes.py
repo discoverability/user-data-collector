@@ -11,7 +11,7 @@ from itertools import groupby
 
 
 def guard_ip(ip):
-    ip=db.session.query(AuthorizedIP).filter(AuthorizedIP.ip==ip).first()
+    ip = db.session.query(AuthorizedIP).filter(AuthorizedIP.ip == ip).first()
     if ip is None:
         abort(403)
 
@@ -27,17 +27,17 @@ def list_netflix_for_user(extension_id):
 @app.route("/<extension_id>/netflix/logs", methods=['GET'])
 def list_netflix_logs_for_user(extension_id):
     suggests = (db.session.query(User, NetflixSuggestMetadata).order_by(NetflixSuggestMetadata.timestamp)
-         .filter(User.id == NetflixSuggestMetadata.user_id)
-         .filter(User.extension_id == extension_id)
-         .order_by(NetflixSuggestMetadata.timestamp,NetflixSuggestMetadata.row,NetflixSuggestMetadata.rank)
-        .all())
+                .filter(User.id == NetflixSuggestMetadata.user_id)
+                .filter(User.extension_id == extension_id)
+                .order_by(NetflixSuggestMetadata.timestamp, NetflixSuggestMetadata.row, NetflixSuggestMetadata.rank)
+                .all())
 
-    suggests = {"%s/%03d/%03d"%(s.timestamp.strftime("%m%d%H%M"),s.row,s.rank):s for _,s in suggests}
+    suggests = {"%s/%03d/%03d" % (s.timestamp.strftime("%m%d%H%M"), s.row, s.rank): s for _, s in suggests}
 
-    #listings = [list(g) for  g in groupby(suggests, attrgetter('timestamp','row','rank'))]
+    # listings = [list(g) for  g in groupby(suggests, attrgetter('timestamp','row','rank'))]
 
     res = "<html><body>#timestamp;ip;content_id;location;row;rank;app_view<br>"
-    for  k_suggest in sorted(suggests):
+    for k_suggest in sorted(suggests):
         suggest = suggests[k_suggest]
         res += "".join([("{};\t" * 8 + "<a href='{}'>{}</a>;" + "<br>").format(suggest.timestamp, suggest.ip,
                                                                                suggest.video_id, suggest.track_id,
@@ -57,13 +57,14 @@ def list_netflix_lolomo_for_user(extension_id):
          .filter(User.id == Lolomo.user_id)
          .filter(User.extension_id == extension_id)).order_by(Lolomo.timestamp, Lolomo.rank)
 
-    lolomos = {"%s/%03d/%s" % (s.timestamp.strftime("%m%d%H%M"), s.rank, s.single_page_session_id): s for _, s in q.all()}
+    lolomos = {"%s/%03d/%s" % (s.timestamp.strftime("%m%d%H%M"), s.rank, s.single_page_session_id): s for _, s in
+               q.all()}
 
     # listings = [list(g) for  g in groupby(suggests, attrgetter('timestamp','row','rank'))]
 
     res = "#timestamp;ip;rank;type;associated_content;full_text_description;single_page_session_id<br>"
     for lolomo_k in sorted(lolomos):
-        lolomo= lolomos[lolomo_k]
+        lolomo = lolomos[lolomo_k]
 
         res += "".join([("{};\t" * 7 + "<br>").format(lolomo.timestamp, lolomo.ip,
                                                       lolomo.rank,
@@ -149,13 +150,12 @@ def list_active_users():
 @app.route("/users", methods=['GET'])
 def list_users():
     guard_ip(request.remote_addr)
-    q = db.session.query(User,UserMetaData).filter(User.id == UserMetaData.user_id)
+    q = db.session.query(User, UserMetaData).filter(User.id == UserMetaData.user_id)
     for key in request.args:
         q = q.filter(UserMetaData.key == key).filter(UserMetaData.value == request.args.get(key))
 
     users = [u for u, _ in q.all()]
-    return render_template('users.html', users=users    )
-
+    return render_template('users.html', users=users)
 
 
 @app.route("/<extension_id>", methods=['GET'])
@@ -252,8 +252,6 @@ def add_netflix_watch_log(extension_id, video_id):
     return make_response("CREATED", 201)
 
 
-
-
 @app.route("/<extension_id>", methods=['DELETE'])
 def del_logs(extension_id):
     guard_ip(request.remote_addr)
@@ -271,12 +269,30 @@ def del_netflix_logs(extension_id):
         .filter(StreamLog.user_id == User.id) \
         .all()
 
+    counter = 0
     for user, log in qs:
+        counter += 1
         db.session.delete(log)
 
+    db.session.commit()
+    return make_response("DELETED %d entries" % counter, 200)
+
+
+@app.route("/<extension_id>/netflix/lolomos", methods=['DELETE'])
+def del_netflix_lolomos(extension_id):
+    guard_ip(request.remote_addr)
+    qs = db.session.query(User, Lolomo) \
+        .filter(User.extension_id == extension_id) \
+        .filter(Lolomo.user_id == User.id) \
+        .all()
+
+    counter = 0
+    for user, lolomo in qs:
+        db.session.delete(lolomo)
+        counter += 1
 
     db.session.commit()
-    return make_response("DELETED", 200)
+    return make_response("DELETED %d entries" % counter, 200)
 
 
 @app.route("/", methods=['DELETE'])

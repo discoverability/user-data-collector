@@ -150,6 +150,11 @@ function handle_static_lolomo(uuid){
             }
         }
 }
+function deffered_static_lolomo_handle(uuid){
+    window.setTimeout ( function() { handle_static_lolomo(uuid); }, 3000);
+    window.setTimeout ( function() { handle_billboard(uuid); }, 3000);
+}
+
 
 function netflixSuggest_onUUID_loaded(obj) {
 
@@ -162,9 +167,9 @@ function netflixSuggest_onUUID_loaded(obj) {
 
     //even if user starts watch something (netflix changes the history)
     
-    window.pageshow = window.onpushstate = window.history.onpushstate = function(e) {
+     window.onpopstate = function(e) {
         
-        handle_static_lolomo(obj.uuid);
+        deffered_static_lolomo_handle(obj.uuid);
     }
 
     handle_static_lolomo(obj.uuid);
@@ -182,9 +187,8 @@ function netflixSuggest_onUUID_loaded(obj) {
             //get the new nodes
             for (let addedNode of mutation.addedNodes) {
 
-                if(addedNode.classList && addedNode.classList.contains("pageTransition-enter") || addedNode.classList.contains("mainView")){
-                    window.setTimeout ( function() { handle_static_lolomo(obj.uuid); }, 3000);
-                    window.setTimeout ( function() { handle_billboard(obj.uuid); }, 3000);
+                if(addedNode.classList && (addedNode.classList.contains("pageTransition-enter") || addedNode.classList.contains("mainView"))){
+                    deffered_static_lolomo_handle(obj.uuid);
                 }
 
 
