@@ -10,9 +10,10 @@ class DevConfig(object):
 
 class ProdConfig(object):
     SQLALCHEMY_DATABASE_URI= "mysql://discoverability:Discoverability75@hn458-001.dbaas.ovh.net:35279/discoverability"
-    DEVELOPMENT=True
-    DEBUG=True
+    DEVELOPMENT=False
+    DEBUG=False
     SQLALCHEMY_TRACK_MODIFICATIONS=False
+    SQLALCHEMY_ENGINE_OPTIONS={"pool_size":100,"max_overflow":100}
 
 
 env=os.environ.get("APP_ENV","development")
