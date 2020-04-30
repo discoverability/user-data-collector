@@ -23,6 +23,10 @@ bump-%:
 	git tag v$(VERSION_NEW)
 	git push origin v$(VERSION_NEW)
 	
+build: clean bootstrap
+	./release.sh "build/$(APP_NAME)-dev" "$(APP_NAME)" "$(VERSION)" "$(TARGET_SERVER)" "1"
+	./release.sh "build/$(APP_NAME)-dev" "$(APP_NAME)" "$(VERSION)" "$(TARGET_SERVER)" "0"
+
 
 update-version-%: bootstrap bump-% 
 	echo "updating to version $(VERSION_NEW)" 
