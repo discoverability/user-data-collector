@@ -25,7 +25,7 @@ bump-%:
 	
 build: clean bootstrap
 	./release.sh "build/$(APP_NAME)-dev" "$(APP_NAME)" "$(VERSION)" "$(TARGET_SERVER)" "1"
-	./release.sh "build/$(APP_NAME)-dev" "$(APP_NAME)" "$(VERSION)" "$(TARGET_SERVER)" "0"
+	./release.sh "build/$(APP_NAME)-prod" "$(APP_NAME)" "$(VERSION)" "$(TARGET_SERVER)" "0"
 
 
 update-version-%: bootstrap bump-% 

@@ -1,19 +1,43 @@
 from app.models import StreamLog, User, NetflixSuggestMetadata, NetflixWatchMetadata, Lolomo, UserMetaData, AuthorizedIP
-from flask import request, make_response, render_template, abort
+from flask import make_response, render_template, abort, g, request, redirect, url_for
 from app import app
 from app import db
-import time
-import datetime
-import sqlalchemy
-from operator import attrgetter
 
-from itertools import groupby
+import sqlalchemy
+
+from functools import wraps
+
+
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if g.user is None:
+            return redirect(url_for('login', next=request.url))
+        return f(*args, **kwargs)
+
+    return decorated_function
 
 
 def guard_ip(ip):
     ip = db.session.query(AuthorizedIP).filter(AuthorizedIP.ip == ip).first()
     if ip is None:
         abort(403)
+
+
+def guard_user_consent(user):
+    consent = db.session.query(UserMetaData).filter(UserMetaData.user_id == user.id).filter(
+        UserMetaData.key == "consent-logs").first()
+    if consent is not None and consent.value=="false":
+        abort(200)
+
+
+@app.route("/<extension_id>/privacy", methods=['GET'])
+def privacy_form(extension_id):
+    u = db.session.query(User).filter_by(extension_id=extension_id).first()
+    if u is None:
+        return abort(404, "not such user")
+
+    return render_template('privacy.html', user=u)
 
 
 @app.route("/<extension_id>/netflix", methods=['GET'])
@@ -315,7 +339,7 @@ def add_log_for_user(extension_id, content_id):
     return make_response("CREATED {} {}".format(s.content_id, u.extension_id), 201)
 
 
-@app.route("/<extension_id>/metadata", methods=["POST"])
+@app.route("/<extension_id>/metadata", methods=["POST", "GET"])
 def add_user_metadata(extension_id):
     u = db.session.query(User).filter_by(extension_id=extension_id).first()
     if u is None:

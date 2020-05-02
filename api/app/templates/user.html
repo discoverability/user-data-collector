@@ -11,18 +11,135 @@
     <title>Content Discoverability Research</title>
 </head>
 <body>
+
+<div class="jumbotron">
+  <h1 class="display-4">Thanks for help!</h1>
+  <p class="lead">This is a simple hero unit, a simple jumbotron-style component for calling extra attention to featured content or information.</p>
+  <hr class="my-4">
+  <p>It uses utility classes for typography and spacing to space content out within the larger container.</p>
+  <p class="lead">
+    <a class="btn btn-primary btn-lg" href="#" role="button">Learn more</a>
+  </p>
+</div>
+
 <div class="hero-image">
     <div class="hero-text">
         <h1>Content Discoverability Research</h1>
-        <p>Access All your Data</p>
-        <button  onclick="location.href='/{{  user.extension_id }}/netflix/logs'" >Netflix Suggestions</button>
-        <button  onclick="location.href='/{{  user.extension_id }}/netflix/lolomos'" >Netflix List of Movies</button>
-        <button  onclick="location.href='/{{  user.extension_id }}/netflix/watches'" >Netflix Watch List</button>
-        <button  onclick="location.href='mailto:nicolas.herbaut@univ-paris1.fr'" >Contact Us</button>
-
     </div>
+    <div class="container">
+        <h2>Access All your Data</h2>
+        <button onclick="location.href='/{{ user.extension_id }}/netflix/logs'">Netflix Suggestions</button>
+        <button onclick="location.href='/{{ user.extension_id }}/netflix/lolomos'">Netflix List of Movies</button>
+        <button onclick="location.href='/{{ user.extension_id }}/netflix/watches'">Netflix Watch List</button>
+        <button onclick="location.href='mailto:nicolas.herbaut@univ-paris1.fr'">Contact Us</button>
+
+        <form>
+            <section class="form-group">
+                <h2>Privacy</h2>
+
+                {% set consents = {'consent-logs':False,'consent-watches':False} %}
+
+                {% for meta in user.user_metadata %}
+
+                    {% if meta.key|string() == "consent-logs" %}
+                        {% if meta.value|string() == "true" %}
+                            {% do consents.update({"consent-logs":True}) %}
+                        {% endif %}
+                    {% elif meta.key|string()=="consent-watches" %}
+                        {% if meta.value|string() == "true" %}
+                            {% do consents.update({"consent-watches":True}) %}
+                        {% endif %}
+                    {% endif %}
+                {% endfor %}
+
+                <div class="form-row">
+
+
+                    <fieldset class="form-check form-group col-md-12">
+
+
+                        <input class="form-check-input" type="checkbox" value="" id="consent-logs"
+
+                                {% if consents['consent-logs'] is sameas true %}
+                               checked
+                                {% endif %}
+                        >
+                        <label class="form-check-label" for="defaultCheck1">
+                            Record the suggestions I receive from supported content-providers.
+                        </label>
+                    </fieldset>
+                    <fieldset class="form-check form-group col-md-12">
+                        <input class="form-check-input" type="checkbox" value="" id="consent-watches"
+                                {% if consents['consent-watches'] is sameas true %}
+                               checked
+                                {% endif %}
+                        >
+                        <label class="form-check-label" for="defaultCheck1">
+                            Record the content I watch from supported content-providers.
+                        </label>
+                    </fieldset>
+
+
+                </div>
+                <fieldset class="form-input form-group col-md-12">
+                    <input class="form-check-input" type="checkbox" value="" id="delete-all-data"
+
+
+                    >
+                    <label class="form-check-label" for="defaultCheck1">
+                        Deleted contributed anonymous data
+                    </label>
+                </fieldset>
+
+
+            </section>
+        </form>
+
+        </p>
+    </div>
+
 
 </div>
 <img src="{{ url_for('static', filename='img/p1.jpg') }}" id="p1"/>
+
+<script type="application/javascript">
+    function on_preference_saved(elt) {
+        var parent = elt.target.parentElement;
+        var key = elt.target.id;
+        var value = elt.target.checked;
+
+        save_preference(parent, key, value);
+
+    }
+
+    function save_preference(parent, key, value) {
+        parent.setAttribute('disabled', 'disabled');
+
+
+        var oReq = new XMLHttpRequest();
+        oReq.addEventListener("load", function (elt) {
+            console.log("preference saved");
+            parent.removeAttribute('disabled');
+
+        });
+        oReq.open("POST", "https://conso-api.vod-prime.space/{{ user.extension_id }}/metadata?" + key + "=" + value);
+        oReq.send();
+    }
+
+    function confirm_delete_all(elt) {
+        var result = window.confirm("Are you sure you want to delete all the data you've contributed?");
+        if (result) {
+            on_preference_saved(elt);
+            alert("Deletion Requested. It should processing soon.Please uninstall the extension to stop collecting any more data")
+        }
+    }
+
+
+    document.getElementById("consent-logs").addEventListener("click", on_preference_saved);
+    document.getElementById("consent-watches").addEventListener("click", on_preference_saved);
+    document.getElementById("delete-all-data").addEventListener("click", confirm_delete_all);
+
+</script>
 </body>
+
 </html>

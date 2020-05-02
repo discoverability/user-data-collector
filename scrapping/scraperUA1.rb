@@ -13,6 +13,9 @@ options.add_extension('./chrome_extension.crx')
 
 browser = Watir::Browser.new :chrome, options: options
 
+browser.goto("https://conso-api.vod-prime.space/set_robot")
+
+
 #log in
 browser.goto("https://www.netflix.com/login")
 
