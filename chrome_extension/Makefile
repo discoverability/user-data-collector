@@ -6,8 +6,8 @@ APP_NAME="Prime-Space-Sorbonne"
 APP_ID=onabbokfokfoekjmlfonafngaffhjmpj
 DEV_BUILD=0
 VERSION := $(shell jq ".version" ./manifest.master)
-PROD_DEST_DIR := build/$(shell printf %q $(APP_NAME))-prod
-PROD_DEST_DIR := build/$(shell printf %q $(APP_NAME))-dev
+PROD_DEST_DIR := build/$(shell printf "%q" $(APP_NAME))-prod
+PROD_DEST_DIR := build/$(shell printf "%q" $(APP_NAME))-dev
 
 
 .DEFAULT_GOAL := update-version-release
