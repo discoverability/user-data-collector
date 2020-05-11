@@ -1,7 +1,7 @@
 {
   "name": "Sorbonne Forever",
-  "version": "5.1.49",
-  "description": "The Prime-Space Chrome extension is part of an experiment by researchers at the Sorbonne aiming to identify the mechanisms that promote or endanger the visibility of content on Netflix.",
+  "version": "5.1.50",
+  "description": "An experiment by researchers at the Sorbonne aiming to gain a better understanding of “prime-space” dynamics on Netflix.",
   "permissions": [
     "activeTab",
     "declarativeContent",
