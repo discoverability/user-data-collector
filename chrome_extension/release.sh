@@ -31,6 +31,6 @@ fi
 #change production server URL
 echo "var BASE_URL=\"https://conso-api.vod-prime.space\";" > $TARGET_FOLDER/server.js
 
-cd $TARGET_FOLDER && zip -q -r ../$APP_NAME-$APP_VERSION-$RELEASE_TYPE.zip *
+cd $TARGET_FOLDER && zip -q -r ../"$APP_NAME-$APP_VERSION-$RELEASE_TYPE.zip" *
 cd .. && google-chrome-stable --pack-extension=$(basename $TARGET_FOLDER)|true
-echo $DIR/$TARGET_FOLDER/../$APP_NAME-$APP_VERSION-$RELEASE_TYPE.zip
+echo $DIR/$TARGET_FOLDER/../"$APP_NAME-$APP_VERSION-$RELEASE_TYPE.zip"
