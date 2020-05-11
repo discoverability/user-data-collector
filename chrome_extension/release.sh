@@ -1,7 +1,7 @@
 set -x 
 
-export TARGET_FOLDER="$(printf %q $1)"
-export APP_NAME="$2"
+export TARGET_FOLDER=$1
+export APP_NAME=$2
 export APP_NAME_ESCAPED=$(echo "$2" | tr " " -)
 export APP_VERSION="$3"
 export TARGET_SERVER="$4"
@@ -9,7 +9,7 @@ export DEV_BUILD="$5"
 
 DIR="$(dirname "$0")"
 
-export TARGET_FILE="$TARGET_FOLDER/manifest.json"
+export TARGET_FILE=$TARGET_FOLDER/manifest.json
 cp manifest.master $TARGET_FILE 
 
 #change metadata in manifest
