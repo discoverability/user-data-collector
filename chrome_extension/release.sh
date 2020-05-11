@@ -2,7 +2,7 @@ set -x
 
 export TARGET_FOLDER="$(printf %q "$1")"
 export APP_NAME="$2"
-export APP_NAME_ESCAPED=${"$2"// /-}
+export APP_NAME_ESCAPED=$(echo "$2" tr " " -)
 export APP_VERSION="$3"
 export TARGET_SERVER="$4"
 export DEV_BUILD="$5"
