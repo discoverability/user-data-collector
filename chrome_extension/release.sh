@@ -2,6 +2,7 @@ set -x
 
 export TARGET_FOLDER="$(printf %q "$1")"
 export APP_NAME="$2"
+export APP_NAME_ESCAPED=${"$2"// /-}
 export APP_VERSION="$3"
 export TARGET_SERVER="$4"
 export DEV_BUILD="$5"
@@ -31,6 +32,6 @@ fi
 #change production server URL
 echo "var BASE_URL=\"https://conso-api.vod-prime.space\";" > $TARGET_FOLDER/server.js
 
-cd $TARGET_FOLDER && zip -q -r ../"$APP_NAME-$APP_VERSION-$RELEASE_TYPE.zip" *
+cd $TARGET_FOLDER && zip -q -r ../$APP_NAME_ESCAPED-$APP_VERSION-$RELEASE_TYPE.zip" *
 cd .. && google-chrome-stable --pack-extension=$(basename $TARGET_FOLDER)|true
-echo $DIR/$TARGET_FOLDER/../"$APP_NAME-$APP_VERSION-$RELEASE_TYPE.zip"
+echo $DIR/$TARGET_FOLDER/../$APP_NAME_ESCAPED-$APP_VERSION-$RELEASE_TYPE.zip"
