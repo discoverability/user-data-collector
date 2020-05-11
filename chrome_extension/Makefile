@@ -6,8 +6,8 @@ APP_NAME=Prime-Space Sorbonne
 APP_ID=onabbokfokfoekjmlfonafngaffhjmpj
 DEV_BUILD=0
 VERSION := $(shell jq ".version" ./manifest.master)
-PROD_DEST_DIR := build/$$(printf %q $(APP_NAME))-prod
-PROD_DEST_DIR := build/$$(printf %q" $(APP_NAME))-dev
+PROD_DEST_DIR := "build/$(APP_NAME)-prod"
+DEV_DEST_DIR := "build/$(APP_NAME)-dev"
 
 
 .DEFAULT_GOAL := update-version-release
@@ -16,10 +16,10 @@ clean:
 	rm -rf build
 
 bootstrap: clean
-	mkdir -p build/$(APP_NAME)-prod
-	cp -r extension_code/* build/$(APP_NAME)-prod
-	mkdir -p build/$(APP_NAME)-dev
-	cp -r extension_code/* build/$(APP_NAME)-dev
+	mkdir -p $(PROD_DEST_DIR)
+	cp -r extension_code/* $(PROD_DEST_DIR)
+	mkdir -p $(DEV_DEST_DIR)
+	cp -r extension_code/* $(DEV_DEST_DIR)
 
 bump-%:
 	$(eval VERSION_NEW :=$(shell ./ext_mgr.py $(VERSION) --$(word 2,$(subst -, ,$@))))
@@ -29,14 +29,14 @@ bump-%:
 	git push origin v$(VERSION_NEW)
 	
 build: clean bootstrap
-	./release.sh "build/$(APP_NAME)-dev" "$(APP_NAME)" "$(VERSION)" "$(TARGET_SERVER)" "1"
-	./release.sh "build/$(APP_NAME)-prod" "$(APP_NAME)" "$(VERSION)" "$(TARGET_SERVER)" "0"
+	./release.sh "$(DEV_DEST_DIR)" "$(APP_NAME)" "$(VERSION)" "$(TARGET_SERVER)" "1"
+	./release.sh "$(PROD_DEST_DIR)" "$(APP_NAME)" "$(VERSION)" "$(TARGET_SERVER)" "0"
 
 
 update-version-%: bootstrap bump-% 
 	echo "updating to version $(VERSION_NEW)" 
-	./release.sh "build/$(APP_NAME)-dev" "$(APP_NAME)" "$(VERSION_NEW)" "$(TARGET_SERVER)" "1"
-	$(eval PROD_PACKAGE_FILE :=$(shell ./release.sh "build/$(APP_NAME)-prod" "$(APP_NAME)" "$(VERSION_NEW)" "$(TARGET_SERVER)" "0" ))
+	./release.sh "$(DEV_DEST_DIR)" "$(APP_NAME)" "$(VERSION_NEW)" "$(TARGET_SERVER)" "1"
+	$(eval PROD_PACKAGE_FILE :=$(shell ./release.sh "$(PROD_DEST_DIR)" "$(APP_NAME)" "$(VERSION_NEW)" "$(TARGET_SERVER)" "0" ))
 	
 
 publish: update-version-release
