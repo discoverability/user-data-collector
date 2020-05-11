@@ -1,9 +1,12 @@
 set -x 
 set -e 
 export TARGET_FOLDER=$1
+echo "@@@ $TARGET_FOLDER"
 export APP_NAME=$2
+echo "@@@@ $APP_NAME"
 export APP_NAME_ESCAPED=$(echo "$2" | tr " " -)
 export APP_VERSION="$3"
+echo "@@@@@$APP_VERSION"
 export TARGET_SERVER="$4"
 export DEV_BUILD="$5"
 
