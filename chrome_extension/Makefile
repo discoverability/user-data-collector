@@ -3,11 +3,12 @@ WS_CLIENT_ID=121069493888-b7jbd2gvgulr5pargfnmig0as5h8bicm.apps.googleuserconten
 WS_API_KEY=AIzaSyDD-Ryao8nyshEC3J7YkakOVDFo334gaIg
 TARGET_SERVER=https://conso-api.vod-prime.space
 APP_NAME=Prime-Space Sorbonne
+APP_NAME_ESCAPED=$(subst " ","-",$(APP_NAME))
 APP_ID=onabbokfokfoekjmlfonafngaffhjmpj
 DEV_BUILD=0
 VERSION := $(shell jq ".version" ./manifest.master)
-PROD_DEST_DIR := "build/$(APP_NAME)-prod"
-DEV_DEST_DIR := "build/$(APP_NAME)-dev"
+PROD_DEST_DIR := build/$(APP_NAME_ESCAPED)-prod
+DEV_DEST_DIR := build/$(APP_NAME_ESCAPED)-dev
 
 
 .DEFAULT_GOAL := update-version-release
@@ -29,8 +30,8 @@ bump-%:
 	git push origin v$(VERSION_NEW)
 	
 build: clean bootstrap
-	./release.sh "$(DEV_DEST_DIR)" "$(APP_NAME)" "$(VERSION)" "$(TARGET_SERVER)" "1"
-	./release.sh "$(PROD_DEST_DIR)" "$(APP_NAME)" "$(VERSION)" "$(TARGET_SERVER)" "0"
+	./release.sh $(DEV_DEST_DIR) "$(APP_NAME)" "$(VERSION)" "$(TARGET_SERVER)" "1"
+	./release.sh $(PROD_DEST_DIR) "$(APP_NAME)" "$(VERSION)" "$(TARGET_SERVER)" "0"
 
 
 update-version-%: bootstrap bump-% 
