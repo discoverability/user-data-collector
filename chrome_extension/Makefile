@@ -2,7 +2,7 @@
 WS_CLIENT_ID=121069493888-b7jbd2gvgulr5pargfnmig0as5h8bicm.apps.googleusercontent.com
 WS_API_KEY=AIzaSyDD-Ryao8nyshEC3J7YkakOVDFo334gaIg
 TARGET_SERVER=https://conso-api.vod-prime.space
-APP_NAME="Prime-Space Sorbonne"
+APP_NAME="Prime-Space-Sorbonne"
 APP_ID=onabbokfokfoekjmlfonafngaffhjmpj
 DEV_BUILD=0
 VERSION := $(shell jq ".version" ./manifest.master)
