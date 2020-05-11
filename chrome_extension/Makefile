@@ -31,14 +31,14 @@ bump-%:
 	git push origin v$(VERSION_NEW)
 	
 build: clean bootstrap
-	./release.sh $(DEV_DEST_DIR) "$(APP_NAME)" "$(VERSION)" "$(TARGET_SERVER)" "1"
-	./release.sh $(PROD_DEST_DIR) "$(APP_NAME)" "$(VERSION)" "$(TARGET_SERVER)" "0"
+	./release.sh $(DEV_DEST_DIR) "$(APP_NAME)" $(VERSION) "$(TARGET_SERVER)" "1"
+	./release.sh $(PROD_DEST_DIR) "$(APP_NAME)" $(VERSION) "$(TARGET_SERVER)" "0"
 
 
 update-version-%: bootstrap bump-% 
 	echo "updating to version $(VERSION_NEW)" 
 
-	./release.sh "$(DEV_DEST_DIR)" "$(APP_NAME)" "$(VERSION_NEW)" "$(TARGET_SERVER)" "1"
+	./release.sh "$(DEV_DEST_DIR)" "$(APP_NAME)" $(VERSION_NEW) "$(TARGET_SERVER)" "1"
 	$(eval PROD_PACKAGE_FILE :=$(shell ./release.sh "$(PROD_DEST_DIR)" "$(APP_NAME)" "$(VERSION_NEW)" "$(TARGET_SERVER)" "0" ))
 	
 
