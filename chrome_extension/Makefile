@@ -37,8 +37,8 @@ build: clean bootstrap
 
 update-version-%: bootstrap bump-% 
 	echo "updating to version $(VERSION_NEW)" 
-	echo @@@@ "$(APP_NAME)"
-	echo ./release.sh "$(DEV_DEST_DIR)" "$(APP_NAME)" "$(VERSION_NEW)" "$(TARGET_SERVER)" "1"
+
+	./release.sh "$(DEV_DEST_DIR)" "$(APP_NAME)" "$(VERSION_NEW)" "$(TARGET_SERVER)" "1"
 	echo $(eval PROD_PACKAGE_FILE :=$(shell ./release.sh "$(PROD_DEST_DIR)" "$(APP_NAME)" "$(VERSION_NEW)" "$(TARGET_SERVER)" "0" ))
 	
 
