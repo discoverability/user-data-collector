@@ -1,5 +1,5 @@
 set -x 
-
+set -e 
 export TARGET_FOLDER=$1
 export APP_NAME=$2
 export APP_NAME_ESCAPED=$(echo "$2" | tr " " -)
