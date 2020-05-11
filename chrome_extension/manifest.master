@@ -1,6 +1,6 @@
 {
   "name": "Media Discoverability Research by EMNS",
-  "version": "5.1.38",
+  "version": "5.1.39",
   "description": "The Prime-Space Chrome extension is part of an experiment by researchers at the Sorbonne aiming to identify the mechanisms that promote or endanger the visibility of content on Netflix.",
   "permissions": [
     "activeTab",
