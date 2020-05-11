@@ -1,5 +1,6 @@
 set -x 
 set -e 
+echo "@@ $0"
 export TARGET_FOLDER=$1
 echo "@@@ $TARGET_FOLDER"
 export APP_NAME=$2
