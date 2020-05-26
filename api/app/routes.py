@@ -1,8 +1,11 @@
 from app.models import StreamLog, User, NetflixSuggestMetadata, NetflixWatchMetadata, Lolomo, UserMetaData, AuthorizedIP
-from flask import make_response, render_template, abort, g, request, redirect, url_for
+
+from flask import request, make_response, render_template, abort, ok
 from app import app
 from app import db
-import json
+import time
+import datetime
+import logging
 
 import sqlalchemy
 
@@ -66,7 +69,29 @@ def login_required(f):
 def guard_ip(ip):
     ip = db.session.query(AuthorizedIP).filter(AuthorizedIP.ip == ip).first()
     if ip is None:
-        abort(403)
+        ok(403)
+
+
+def guard_log_consent(u):
+    for metadata in u.user_metadata:
+        if metadata.key == "consent-logs":
+            if metadata.value != "true":
+                ok(304)
+            else:
+                return
+    logging.warn(f"user {u.extension_id} tried to submit log without consent")
+    ok(304)
+
+
+def guard_watch_consent(u):
+    for metadata in u.user_metadata:
+        if metadata.key == "consent-watches":
+            if metadata.value != "true":
+                abort(304)
+            else:
+                return
+    logging.warn(f"user {u.extension_id} tried to submit watch without consent")
+    abort(304)
 
 
 def guard_user_consent(user):
@@ -280,6 +305,8 @@ def add_netflix_lolomo_log(extension_id):
     u = db.session.query(User).filter_by(extension_id=extension_id).first()
     if u is None:
         return make_response("NO SUCH extension_id REGISTERED", 404)
+
+    guard_log_consent(u)
     payload = request.get_json()
 
     n = Lolomo(ip=request.remote_addr, user=u,
@@ -302,6 +329,8 @@ def add_netflix_watch_log(extension_id, video_id):
     u = db.session.query(User).filter_by(extension_id=extension_id).first()
     if u is None:
         return make_response("NO SUCH extension_id REGISTERED", 404)
+
+    guard_watch_consent(u)
     payload = request.get_json()
 
     n = NetflixWatchMetadata(video_id=video_id,
@@ -375,9 +404,12 @@ def del_users():
 
 @app.route("/<extension_id>/<content_id>", methods=['POST'])
 def add_log_for_user(extension_id, content_id):
+
     u = db.session.query(User).filter_by(extension_id=extension_id).first()
     if u is None:
+        logging.error(f"Unknown User {extension_id} tried to log data")
         return make_response("NO SUCH extension_id REGISTERED", 404)
+    guard_log_consent(u)
     s = StreamLog(content_id=content_id, ip=request.remote_addr, user=u)
     db.session.add(s)
     db.session.commit()
@@ -389,6 +421,7 @@ def add_user_metadata(extension_id):
     u = db.session.query(User).filter_by(extension_id=extension_id).first()
     if u is None:
         return make_response("NO SUCH extension_id REGISTERED", 404)
+    guard_
     for key in request.args:
         already_present_meta = db.session.query(UserMetaData).filter_by(user_id=u.id).filter_by(key=key).first()
         if already_present_meta is not None:
