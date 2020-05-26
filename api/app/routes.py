@@ -21,7 +21,7 @@ def get_dataviz_users():
     users = db.session.query(User).all()
     data = {u.extension_id: {l.single_page_session_id for l in u.lolomos} for u in users}
 
-    return json.dumps([{"user_id": k, "session_ids": v} for k, v in data.items()], cls=SetEncoder)
+    return json.dumps([{"user_id": k, "session_ids": v} for k, v in data.items()], cls=SetEncoder), 200, {'Content-Type': 'application/json'}
 
 
 @app.route("/dataviz-api/v1/thumbnails/<user_id>/<session_id>", methods=['GET'])
@@ -46,7 +46,7 @@ def get_thumbnails_data(user_id, session_id):
         item["row"] = suggest .row
         item["col"] = suggest .rank
         data.append(item)
-    return json.dumps(data)
+    return json.dumps(data), 200, {'Content-Type': 'application/json'}
 
 
 
