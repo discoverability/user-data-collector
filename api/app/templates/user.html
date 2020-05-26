@@ -1,28 +1,64 @@
-<!DOCTYPE html>
-<html lang="en">
+<html>
+
 <head>
+    <title>Prime-Space</title>
+    <link href="https://www.vod-prime.space/style.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:ital,wght@0,100;0,300;0,400;0,500;0,700;1,100;1,300;1,400;1,500;1,700&family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&display=swap"
+          rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 
-    <meta charset="UTF-8">
-    <title>Content Discoverability Research</title>
+
 </head>
+
 <body>
-
-
-<div class="hero-image">
-    <div class="hero-text">
-        <h1>Content Discoverability Research</h1>
+<div class="container">
+    <div class="navbar">
+        <a id="pcen_logo" href="https://emns.fr/chaire/" target=”_blank”><img class="logo"
+                                                                              src="https://www.vod-prime.space/images/pcen_logo_text.png"></a>
+        <a id="emns_logo" href="https://emns.fr/" target=”_blank”><img class="logo"
+                                                                       src="https://www.vod-prime.space/images/emns_logo_text.png"></a>
+        <a id="pcen_logo_mobile" href="https://emns.fr/chaire/" target=”_blank”><img class="logo"
+                                                                                     src="https://www.vod-prime.space/images/pcen_logo_notext.png"></a>
+        <a id="emns_logo_mobile" href="https://emns.fr/" target=”_blank”><img class="logo"
+                                                                              src="https://www.vod-prime.space/images/emns_logo_notext.png"></a>
     </div>
-    <div class="container">
-        <h2>Access All your Data</h2>
-        <button onclick="location.href='/{{ user.extension_id }}/netflix/logs'">Netflix Suggestions</button>
-        <button onclick="location.href='/{{ user.extension_id }}/netflix/lolomos'">Netflix List of Movies</button>
-        <button onclick="location.href='/{{ user.extension_id }}/netflix/watches'">Netflix Watch List</button>
-        <button onclick="location.href='mailto:nicolas.herbaut@univ-paris1.fr'">Contact Us</button>
 
-        <form>
-            <section class="form-group">
-                <h2>Privacy</h2>
 
+    <div class="header">
+        <h1 id="plugin_name">Prime-Space</h1>
+        <h2 id="subtitle">Une extension Google Chrome fabriquée avec ♥ à la Sorbonne</h2>
+    </div>
+
+    <div class="content">
+        <div class="column1">
+            <div class="sub_section">
+                <div class="section_header" id="pres_header">Data you provided</div>
+                <p>
+                <ol>
+                    <li>
+                        <a target="_blank" href='/{{ user.extension_id }}/netflix/logs'>Netflix Suggestions
+                        </a></li>
+                    <li><a target="_blank" href='/{{ user.extension_id }}/netflix/lolomos'>Netflix List of
+                        Movies</li>
+                    </a>
+                    <li><a target="_blank" href='/{{ user.extension_id }}/netflix/watches'>Netflix Watch List
+                    </a></li>
+                    <li><a target="_blank" href='mailto:nicolas.herbaut@univ-paris1.fr'>Contact Us</a></li>
+                </ol>
+                </p>
+
+            </div>
+        </div>
+
+
+
+    <div class="column2">
+        <div class="sub_section">
+            <div class="section_header" id="install_header">Data collection consent</div>
+
+        <p>All the data collected are anonymous. There's no way for us to tell who you are.</p>
+
+            <form>
                 {% set consents = {'consent-logs':False,'consent-watches':False} %}
 
                 {% for meta in user.user_metadata %}
@@ -41,7 +77,7 @@
                 <div class="form-row">
 
 
-                    <fieldset class="form-check form-group col-md-12">
+                    <fieldset class="form-check form-group">
 
 
                         <input class="form-check-input" type="checkbox" value="" id="consent-logs"
@@ -54,7 +90,7 @@
                             Record the suggestions I receive from supported content-providers.
                         </label>
                     </fieldset>
-                    <fieldset class="form-check form-group col-md-12">
+                    <fieldset class="form-check form-group ">
                         <input class="form-check-input" type="checkbox" value="" id="consent-watches"
                                 {% if consents['consent-watches'] is sameas true %}
                                checked
@@ -67,7 +103,7 @@
 
 
                 </div>
-                <fieldset class="form-input form-group col-md-12">
+                <fieldset class="form-input form-group ">
                     <input class="form-check-input" type="checkbox" value="" id="delete-all-data"
 
 
@@ -78,15 +114,27 @@
                 </fieldset>
 
 
-            </section>
-        </form>
+            </form>
 
-        </p>
+        </div>
     </div>
 
-
 </div>
-<img src="{{ url_for('static', filename='img/p1.jpg') }}" id="p1"/>
+
+<footer>
+    <div class="footer-content">
+
+        <p id="who">Ce projet de recherche est mené par le département médias (EMNS) de la Chaire Pluralisme
+            Culturel et Éthique du Numérique.</p>
+        <p id="legal">École des Médias et du Numérique de la Sorbonne<br>
+            Maison des Sciences Économiques de la Sorbonne<br>
+            106 Boulevard de l'Hôpital 75013 Paris
+        </p>
+
+        <a id="paris1link" href="https://www.pantheonsorbonne.fr/" target="_blank"><img id="paris1logo"
+                                                                                        src="https://www.vod-prime.space/images/paris1_logo_noir_fr.png"></a>
+    </div>
+</footer>
 
 <script type="application/javascript">
     function on_preference_saved(elt) {
@@ -108,7 +156,7 @@
             parent.removeAttribute('disabled');
 
         });
-        oReq.open("POST", "https://conso-api.vod-prime.space/{{ user.extension_id }}/metadata?" + key + "=" + value);
+        oReq.open("POST", "/{{ user.extension_id }}/metadata?" + key + "=" + value);
         oReq.send();
     }
 
