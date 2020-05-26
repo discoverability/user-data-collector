@@ -1,8 +1,9 @@
 from app.models import StreamLog, User, NetflixSuggestMetadata, NetflixWatchMetadata, Lolomo, UserMetaData, AuthorizedIP
-
-from flask import request, make_response, render_template, abort, ok
+import json
+from flask import request, make_response, render_template, abort
 from app import app
 from app import db
+import werkzeug.exceptions as ex
 import time
 import datetime
 import logging
@@ -24,12 +25,13 @@ def get_dataviz_users():
     users = db.session.query(User).all()
     data = {u.extension_id: {l.single_page_session_id for l in u.lolomos} for u in users}
 
-    return json.dumps([{"user_id": k, "session_ids": v} for k, v in data.items()], cls=SetEncoder), 200, {'Content-Type': 'application/json'}
+    return json.dumps([{"user_id": k, "session_ids": v} for k, v in data.items()], cls=SetEncoder), 200, {
+        'Content-Type': 'application/json'}
 
 
 @app.route("/dataviz-api/v1/thumbnails/<user_id>/<session_id>", methods=['GET'])
 def get_thumbnails_data(user_id, session_id):
-    data=[]
+    data = []
 
     suggests = (db.session.query(User, NetflixSuggestMetadata).order_by(NetflixSuggestMetadata.timestamp)
                 .filter(User.id == NetflixSuggestMetadata.user_id)
@@ -44,16 +46,12 @@ def get_thumbnails_data(user_id, session_id):
     res = "<html><body>#timestamp;ip;content_id;location;row;rank;app_view<br>"
     for k_suggest in sorted(suggests):
         suggest = suggests[k_suggest]
-        item={}
-        item["content_id"] = suggest .track_id
-        item["row"] = suggest .row
-        item["col"] = suggest .rank
+        item = {}
+        item["content_id"] = suggest.track_id
+        item["row"] = suggest.row
+        item["col"] = suggest.rank
         data.append(item)
     return json.dumps(data), 200, {'Content-Type': 'application/json'}
-
-
-
-
 
 
 def login_required(f):
@@ -69,29 +67,29 @@ def login_required(f):
 def guard_ip(ip):
     ip = db.session.query(AuthorizedIP).filter(AuthorizedIP.ip == ip).first()
     if ip is None:
-        ok(403)
+        abort(403, "Your IP is not authorized to use this feature. Contact Admin")
 
 
 def guard_log_consent(u):
     for metadata in u.user_metadata:
         if metadata.key == "consent-logs":
             if metadata.value != "true":
-                ok(304)
+                abort(400, "Can't save your data without your consent. Update your privacy configuration")
             else:
                 return
     logging.warn(f"user {u.extension_id} tried to submit log without consent")
-    ok(304)
+    abort(400, "Can't save your data without your consent. Update your privacy configuration")
 
 
 def guard_watch_consent(u):
     for metadata in u.user_metadata:
         if metadata.key == "consent-watches":
             if metadata.value != "true":
-                abort(304)
+                abort(400, "Can't save your data without your consent. Update your privacy configuration")
             else:
                 return
     logging.warn(f"user {u.extension_id} tried to submit watch without consent")
-    abort(304)
+    abort(400, "Can't save your data without your consent. Update your privacy configuration")
 
 
 def guard_user_consent(user):
@@ -278,6 +276,7 @@ def add_netflix_suggest_log(extension_id):
     u = db.session.query(User).filter_by(extension_id=extension_id).first()
     if u is None:
         return make_response("NO SUCH extension_id REGISTERED", 404)
+    guard_log_consent(u)
     payload = request.get_json()
 
     n = NetflixSuggestMetadata(ip=request.remote_addr, user=u, list_id=payload.get("list_id", None),
@@ -404,7 +403,6 @@ def del_users():
 
 @app.route("/<extension_id>/<content_id>", methods=['POST'])
 def add_log_for_user(extension_id, content_id):
-
     u = db.session.query(User).filter_by(extension_id=extension_id).first()
     if u is None:
         logging.error(f"Unknown User {extension_id} tried to log data")
@@ -421,7 +419,6 @@ def add_user_metadata(extension_id):
     u = db.session.query(User).filter_by(extension_id=extension_id).first()
     if u is None:
         return make_response("NO SUCH extension_id REGISTERED", 404)
-    guard_
     for key in request.args:
         already_present_meta = db.session.query(UserMetaData).filter_by(user_id=u.id).filter_by(key=key).first()
         if already_present_meta is not None:
