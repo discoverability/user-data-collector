@@ -1,4 +1,5 @@
 import os
+import logging
 basedir = os.path.abspath(os.path.dirname(__file__))
 
 class DevConfig(object):
@@ -14,6 +15,8 @@ class ProdConfig(object):
     DEBUG=False
     SQLALCHEMY_TRACK_MODIFICATIONS=False
     SQLALCHEMY_ENGINE_OPTIONS={"pool_size":100,"max_overflow":100}
+    logging.basicConfig(filename='/var/log/chrome/discoverability/conso-api.log', level=logging.INFO)
+
 
 
 env=os.environ.get("APP_ENV","development")
