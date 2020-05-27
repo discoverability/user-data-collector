@@ -12,6 +12,10 @@ import sqlalchemy
 
 from functools import wraps
 
+CONSENT_WATCHES = "consent-watches"
+
+CONSENT_LOGS = "consent-logs"
+
 
 class SetEncoder(json.JSONEncoder):
     def default(self, obj):
@@ -54,15 +58,6 @@ def get_thumbnails_data(user_id, session_id):
     return json.dumps(data), 200, {'Content-Type': 'application/json'}
 
 
-def login_required(f):
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        if g.user is None:
-            return redirect(url_for('login', next=request.url))
-        return f(*args, **kwargs)
-
-    return decorated_function
-
 
 def guard_ip(ip):
     ip = db.session.query(AuthorizedIP).filter(AuthorizedIP.ip == ip).first()
@@ -72,7 +67,7 @@ def guard_ip(ip):
 
 def guard_log_consent(u):
     for metadata in u.user_metadata:
-        if metadata.key == "consent-logs":
+        if metadata.key == CONSENT_LOGS:
             if metadata.value != "true":
                 abort(400, "Can't save your data without your consent. Update your privacy configuration")
             else:
@@ -83,7 +78,7 @@ def guard_log_consent(u):
 
 def guard_watch_consent(u):
     for metadata in u.user_metadata:
-        if metadata.key == "consent-watches":
+        if metadata.key == CONSENT_WATCHES:
             if metadata.value != "true":
                 abort(400, "Can't save your data without your consent. Update your privacy configuration")
             else:
@@ -263,6 +258,14 @@ def get_user_data(extension_id):
 def create_user(extension_id):
     u = User(extension_id=extension_id)
     db.session.add(u)
+
+    consent_logs = UserMetaData(user=u, key=CONSENT_LOGS, value="true")
+    consent_watches = UserMetaData(user=u, key=CONSENT_WATCHES, value="true")
+
+    db.session.add(consent_logs)
+    db.session.add(consent_watches)
+
+
     try:
         db.session.commit()
     except sqlalchemy.exc.IntegrityError:
