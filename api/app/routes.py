@@ -42,7 +42,7 @@ def get_thumbnails_data(user_id, session_id):
     for k_suggest in sorted(suggests):
         suggest = suggests[k_suggest]
         item={}
-        item["content_id"] = suggest .track_id
+        item["content_id"] = suggest .video_id
         item["row"] = suggest .row
         item["col"] = suggest .rank
         data.append(item)
@@ -108,7 +108,9 @@ def list_netflix_logs_for_user(extension_id):
     res = "<html><body>#timestamp;ip;content_id;location;row;rank;app_view<br>"
     for k_suggest in sorted(suggests):
         suggest = suggests[k_suggest]
-        res += "".join([("{};\t" * 8 + "<a href='{}'>{}</a>;" + "<br>").format(suggest.timestamp, suggest.ip,
+        res += "".join([("{};\t" * 8 + "<a href='{}'>{}</a>;" + "<br>").format(suggest.timestamp, 
+                                                                               #suggest.ip,
+                                                                               "unknown",
                                                                                suggest.video_id, suggest.track_id,
                                                                                suggest.location,
                                                                                suggest.row, suggest.rank,
@@ -135,7 +137,9 @@ def list_netflix_lolomo_for_user(extension_id):
     for lolomo_k in sorted(lolomos):
         lolomo = lolomos[lolomo_k]
 
-        res += "".join([("{};\t" * 7 + "<br>").format(lolomo.timestamp, lolomo.ip,
+        res += "".join([("{};\t" * 7 + "<br>").format(lolomo.timestamp,
+                                                      #lolomo.ip,
+                                                      "unknown",
                                                       lolomo.rank,
                                                       lolomo.type,
                                                       lolomo.associated_content,
@@ -157,7 +161,8 @@ def list_netflix_lolomo_latest_for_user(extension_id):
 
     res = "#timestamp;ip;rank;type;associated_content;full_text_description;single_page_session_id<br>"
     for lolomo in q.all():
-        res += "".join([("{};\t" * 7 + "<br>").format(lolomo.timestamp, lolomo.ip,
+        res += "".join([("{};\t" * 7 + "<br>").format(lolomo.timestamp, 
+                                                      "unknown",
                                                       lolomo.rank,
                                                       lolomo.type,
                                                       lolomo.associated_content,
@@ -180,7 +185,8 @@ def list_netflix_lolomo_for_user_for_lolomo_id(extension_id, single_page_session
 
     res = "#timestamp;ip;rank;type;associated_content;full_text_description;single_page_session_id<br>"
     for _, lolomo in q.all():
-        res += "".join([("{};\t" * 6 + "<br>").format(lolomo.timestamp, lolomo.ip,
+        res += "".join([("{};\t" * 6 + "<br>").format(lolomo.timestamp, 
+                                                      #lolomo.ip,
                                                       lolomo.rank,
                                                       lolomo.type,
                                                       lolomo.associated_content,
@@ -201,7 +207,10 @@ def list_netflix_watches_for_user(extension_id):
     res = "#timestamp;ip;video_id;track_id;rank;row;list_id;request_id;lolomo_id<br>"
     for (user, watch) in q.all():
         res += "%s;\t%s\t%s\t;%s;\t%s\t;%s\t;%s\t;%s\t;%s\t;<br>" % (
-            watch.timestamp, watch.ip, str(watch.video_id), str(watch.track_id), str(watch.rank), str(watch.row),
+            watch.timestamp, 
+            #watch.ip,
+            "unknown",
+            str(watch.video_id), str(watch.track_id), str(watch.rank), str(watch.row),
             watch.list_id, watch.request_id, watch.lolomo_id)
 
     return make_response(res, 200)
@@ -223,7 +232,7 @@ def list_users():
     for key in request.args:
         q = q.filter(UserMetaData.key == key).filter(UserMetaData.value == request.args.get(key))
 
-    users = [u for u, _ in q.all()]
+    users = {u for u, _ in q.all()}
     return render_template('users.html', users=users)
 
 
