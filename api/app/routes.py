@@ -242,7 +242,7 @@ def list_users():
         q = q.filter(UserMetaData.key == key).filter(UserMetaData.value == request.args.get(key))
 
     users = [u for u, _ in q.all()]
-    return render_template('users.html', users=users)
+    return render_template('users.html', users=set(users))
 
 
 @app.route("/<extension_id>", methods=['GET'])
