@@ -1,12 +1,20 @@
 from app.models import StreamLog, User, NetflixSuggestMetadata, NetflixWatchMetadata, Lolomo, UserMetaData, AuthorizedIP
-from flask import make_response, render_template, abort, g, request, redirect, url_for
+import json
+from flask import request, make_response, render_template, abort
 from app import app
 from app import db
-import json
+import werkzeug.exceptions as ex
+import time
+import datetime
+import logging
 
 import sqlalchemy
 
 from functools import wraps
+
+CONSENT_WATCHES = "consent-watches"
+
+CONSENT_LOGS = "consent-logs"
 
 
 class SetEncoder(json.JSONEncoder):
@@ -21,12 +29,13 @@ def get_dataviz_users():
     users = db.session.query(User).all()
     data = {u.extension_id: {l.single_page_session_id for l in u.lolomos} for u in users}
 
-    return json.dumps([{"user_id": k, "session_ids": v} for k, v in data.items()], cls=SetEncoder), 200, {'Content-Type': 'application/json'}
+    return json.dumps([{"user_id": k, "session_ids": v} for k, v in data.items()], cls=SetEncoder), 200, {
+        'Content-Type': 'application/json'}
 
 
 @app.route("/dataviz-api/v1/thumbnails/<user_id>/<session_id>", methods=['GET'])
 def get_thumbnails_data(user_id, session_id):
-    data=[]
+    data = []
 
     suggests = (db.session.query(User, NetflixSuggestMetadata).order_by(NetflixSuggestMetadata.timestamp)
                 .filter(User.id == NetflixSuggestMetadata.user_id)
@@ -50,23 +59,32 @@ def get_thumbnails_data(user_id, session_id):
 
 
 
-
-
-
-def login_required(f):
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        if g.user is None:
-            return redirect(url_for('login', next=request.url))
-        return f(*args, **kwargs)
-
-    return decorated_function
-
-
 def guard_ip(ip):
     ip = db.session.query(AuthorizedIP).filter(AuthorizedIP.ip == ip).first()
     if ip is None:
-        abort(403)
+        abort(403, "Your IP is not authorized to use this feature. Contact Admin")
+
+
+def guard_log_consent(u):
+    for metadata in u.user_metadata:
+        if metadata.key == CONSENT_LOGS:
+            if metadata.value != "true":
+                abort(400, "Can't save your data without your consent. Update your privacy configuration")
+            else:
+                return
+    logging.warn(f"user {u.extension_id} tried to submit log without consent")
+    abort(400, "Can't save your data without your consent. Update your privacy configuration")
+
+
+def guard_watch_consent(u):
+    for metadata in u.user_metadata:
+        if metadata.key == CONSENT_WATCHES:
+            if metadata.value != "true":
+                abort(400, "Can't save your data without your consent. Update your privacy configuration")
+            else:
+                return
+    logging.warn(f"user {u.extension_id} tried to submit watch without consent")
+    abort(400, "Can't save your data without your consent. Update your privacy configuration")
 
 
 def guard_user_consent(user):
@@ -231,8 +249,8 @@ def list_users():
     for key in request.args:
         q = q.filter(UserMetaData.key == key).filter(UserMetaData.value == request.args.get(key))
 
-    users = {u for u, _ in q.all()}
-    return render_template('users.html', users=users)
+    users = [u for u, _ in q.all()]
+    return render_template('users.html', users=set(users))
 
 
 @app.route("/<extension_id>", methods=['GET'])
@@ -248,6 +266,14 @@ def get_user_data(extension_id):
 def create_user(extension_id):
     u = User(extension_id=extension_id)
     db.session.add(u)
+
+    consent_logs = UserMetaData(user=u, key=CONSENT_LOGS, value="true")
+    consent_watches = UserMetaData(user=u, key=CONSENT_WATCHES, value="true")
+
+    db.session.add(consent_logs)
+    db.session.add(consent_watches)
+
+
     try:
         db.session.commit()
     except sqlalchemy.exc.IntegrityError:
@@ -261,6 +287,7 @@ def add_netflix_suggest_log(extension_id):
     u = db.session.query(User).filter_by(extension_id=extension_id).first()
     if u is None:
         return make_response("NO SUCH extension_id REGISTERED", 404)
+    guard_log_consent(u)
     payload = request.get_json()
 
     n = NetflixSuggestMetadata(ip=request.remote_addr, user=u, list_id=payload.get("list_id", None),
@@ -288,6 +315,8 @@ def add_netflix_lolomo_log(extension_id):
     u = db.session.query(User).filter_by(extension_id=extension_id).first()
     if u is None:
         return make_response("NO SUCH extension_id REGISTERED", 404)
+
+    guard_log_consent(u)
     payload = request.get_json()
 
     n = Lolomo(ip=request.remote_addr, user=u,
@@ -310,6 +339,8 @@ def add_netflix_watch_log(extension_id, video_id):
     u = db.session.query(User).filter_by(extension_id=extension_id).first()
     if u is None:
         return make_response("NO SUCH extension_id REGISTERED", 404)
+
+    guard_watch_consent(u)
     payload = request.get_json()
 
     n = NetflixWatchMetadata(video_id=video_id,
@@ -385,7 +416,9 @@ def del_users():
 def add_log_for_user(extension_id, content_id):
     u = db.session.query(User).filter_by(extension_id=extension_id).first()
     if u is None:
+        logging.error(f"Unknown User {extension_id} tried to log data")
         return make_response("NO SUCH extension_id REGISTERED", 404)
+    guard_log_consent(u)
     s = StreamLog(content_id=content_id, ip=request.remote_addr, user=u)
     db.session.add(s)
     db.session.commit()
