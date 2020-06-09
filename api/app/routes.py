@@ -7,7 +7,7 @@ import werkzeug.exceptions as ex
 import time
 import datetime
 import logging
-
+import collections
 import sqlalchemy
 
 from functools import wraps
@@ -27,10 +27,23 @@ class SetEncoder(json.JSONEncoder):
 @app.route("/dataviz-api/v1/users", methods=['GET'])
 def get_dataviz_users():
     users = db.session.query(User).all()
-    data = {u.extension_id: {l.single_page_session_id for l in u.lolomos} for u in users}
+    res = []
+    for u in users:
+        user_data = {}
+        user_data["user_id"] = u.extension_id
+        user_data["creation_date"] = u.creation_date.timestamp()
+        user_data["sessions"] = []
+        for l in {l.single_page_session_id for l in u.lolomos}:
+            session_data = {}
+            session_data["session_id"] = l
+            creation_date=next((ll.timestamp for ll in u.lolomos if ll.single_page_session_id == l))
+            session_data["creation_date"] =creation_date.timestamp()
+            session_data["links"]={}
+            session_data["links"]["thumbnails"]="/dataviz-api/v1/thumbnails/%s/%s"%(u.extension_id,l)
+            user_data["sessions"].append(session_data)
+        res.append(user_data)
 
-    return json.dumps([{"user_id": k, "session_ids": v} for k, v in data.items()], cls=SetEncoder), 200, {
-        'Content-Type': 'application/json'}
+    return json.dumps(res, cls=SetEncoder), 200, {'Content-Type': 'application/json'}
 
 
 @app.route("/dataviz-api/v1/thumbnails/<user_id>/<session_id>", methods=['GET'])
@@ -51,13 +64,12 @@ def get_thumbnails_data(user_id, session_id):
     res = "<html><body>#timestamp;ip;content_id;location;row;rank;app_view<br>"
     for k_suggest in sorted(suggests):
         suggest = suggests[k_suggest]
-        item={}
-        item["content_id"] = suggest .video_id
-        item["row"] = suggest .row
-        item["col"] = suggest .rank
+        item = {}
+        item["content_id"] = suggest.video_id
+        item["row"] = suggest.row
+        item["col"] = suggest.rank
         data.append(item)
     return json.dumps(data), 200, {'Content-Type': 'application/json'}
-
 
 
 def guard_ip(ip):
@@ -73,7 +85,7 @@ def guard_log_consent(u):
                 abort(400, "Can't save your data without your consent. Update your privacy configuration")
             else:
                 return
-    logging.warn("user "+u.extension_id+" tried to submit log without consent")
+    logging.warn("user " + u.extension_id + " tried to submit log without consent")
     abort(400, "Can't save your data without your consent. Update your privacy configuration")
 
 
@@ -84,7 +96,7 @@ def guard_watch_consent(u):
                 abort(400, "Can't save your data without your consent. Update your privacy configuration")
             else:
                 return
-    logging.warn("user"+u.extension_id+" tried to submit watch without consent")
+    logging.warn("user" + u.extension_id + " tried to submit watch without consent")
     abort(400, "Can't save your data without your consent. Update your privacy configuration")
 
 
@@ -127,8 +139,8 @@ def list_netflix_logs_for_user(extension_id):
     res = "<html><body>#timestamp;ip;content_id;location;row;rank;app_view<br>"
     for k_suggest in sorted(suggests):
         suggest = suggests[k_suggest]
-        res += "".join([("{};\t" * 8 + "<a href='{}'>{}</a>;" + "<br>").format(suggest.timestamp, 
-                                                                               #suggest.ip,
+        res += "".join([("{};\t" * 8 + "<a href='{}'>{}</a>;" + "<br>").format(suggest.timestamp,
+                                                                               # suggest.ip,
                                                                                "unknown",
                                                                                suggest.video_id, suggest.track_id,
                                                                                suggest.location,
@@ -157,7 +169,7 @@ def list_netflix_lolomo_for_user(extension_id):
         lolomo = lolomos[lolomo_k]
 
         res += "".join([("{};\t" * 7 + "<br>").format(lolomo.timestamp,
-                                                      #lolomo.ip,
+                                                      # lolomo.ip,
                                                       "unknown",
                                                       lolomo.rank,
                                                       lolomo.type,
@@ -180,7 +192,7 @@ def list_netflix_lolomo_latest_for_user(extension_id):
 
     res = "#timestamp;ip;rank;type;associated_content;full_text_description;single_page_session_id<br>"
     for lolomo in q.all():
-        res += "".join([("{};\t" * 7 + "<br>").format(lolomo.timestamp, 
+        res += "".join([("{};\t" * 7 + "<br>").format(lolomo.timestamp,
                                                       "unknown",
                                                       lolomo.rank,
                                                       lolomo.type,
@@ -204,7 +216,7 @@ def list_netflix_lolomo_for_user_for_lolomo_id(extension_id, single_page_session
 
     res = "#timestamp;ip;rank;type;associated_content;full_text_description;single_page_session_id<br>"
     for _, lolomo in q.all():
-        res += "".join([("{};\t" * 6 + "<br>").format(lolomo.timestamp, "X.X.X.X",#lolomo.ip,
+        res += "".join([("{};\t" * 6 + "<br>").format(lolomo.timestamp, "X.X.X.X",  # lolomo.ip,
                                                       lolomo.rank,
                                                       lolomo.type,
                                                       lolomo.associated_content,
@@ -225,8 +237,8 @@ def list_netflix_watches_for_user(extension_id):
     res = "#timestamp;ip;video_id;track_id;rank;row;list_id;request_id;lolomo_id<br>"
     for (user, watch) in q.all():
         res += "%s;\t%s\t%s\t;%s;\t%s\t;%s\t;%s\t;%s\t;%s\t;<br>" % (
-            watch.timestamp, 
-            #watch.ip,
+            watch.timestamp,
+            # watch.ip,
             "unknown",
             str(watch.video_id), str(watch.track_id), str(watch.rank), str(watch.row),
             watch.list_id, watch.request_id, watch.lolomo_id)
@@ -273,7 +285,6 @@ def create_user(extension_id):
 
     db.session.add(consent_logs)
     db.session.add(consent_watches)
-
 
     try:
         db.session.commit()
@@ -417,7 +428,7 @@ def del_users():
 def add_log_for_user(extension_id, content_id):
     u = db.session.query(User).filter_by(extension_id=extension_id).first()
     if u is None:
-        logging.error("Unknown User "+extension_id+" tried to log data")
+        logging.error("Unknown User " + extension_id + " tried to log data")
         return make_response("NO SUCH extension_id REGISTERED", 404)
     guard_log_consent(u)
     s = StreamLog(content_id=content_id, ip=request.remote_addr, user=u)
