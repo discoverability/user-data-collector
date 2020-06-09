@@ -38,8 +38,11 @@ def get_dataviz_users():
             session_data["session_id"] = l
             creation_date=next((ll.timestamp for ll in u.lolomos if ll.single_page_session_id == l))
             session_data["creation_date"] =creation_date.timestamp()
-            session_data["links"]={}
-            session_data["links"]["thumbnails"]="/dataviz-api/v1/thumbnails/%s/%s"%(u.extension_id,l)
+
+            link_data = {}
+            link_data["name"]="thumbnails"
+            link_data["href"]="/dataviz-api/v1/thumbnails/%s/%s"%(u.extension_id,l)
+            session_data["links"] = [link_data]
             user_data["sessions"].append(session_data)
         res.append(user_data)
 
