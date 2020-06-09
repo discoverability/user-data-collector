@@ -73,7 +73,7 @@ def guard_log_consent(u):
                 abort(400, "Can't save your data without your consent. Update your privacy configuration")
             else:
                 return
-    logging.warn(f"user {u.extension_id} tried to submit log without consent")
+    logging.warn("user "+u.extension_id+" tried to submit log without consent")
     abort(400, "Can't save your data without your consent. Update your privacy configuration")
 
 
@@ -84,7 +84,7 @@ def guard_watch_consent(u):
                 abort(400, "Can't save your data without your consent. Update your privacy configuration")
             else:
                 return
-    logging.warn(f"user {u.extension_id} tried to submit watch without consent")
+    logging.warn("user"+u.extension_id+" tried to submit watch without consent")
     abort(400, "Can't save your data without your consent. Update your privacy configuration")
 
 
@@ -417,7 +417,7 @@ def del_users():
 def add_log_for_user(extension_id, content_id):
     u = db.session.query(User).filter_by(extension_id=extension_id).first()
     if u is None:
-        logging.error(f"Unknown User {extension_id} tried to log data")
+        logging.error("Unknown User "+extension_id+" tried to log data")
         return make_response("NO SUCH extension_id REGISTERED", 404)
     guard_log_consent(u)
     s = StreamLog(content_id=content_id, ip=request.remote_addr, user=u)
