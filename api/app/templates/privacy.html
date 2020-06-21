@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>User Privacy Settings</title>
+
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
+          integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.6.3/css/all.css"
+          integrity="sha384-UHRtZLI+pbxtHCWp1t77Bi1L4ZtiqrqD80Kn4Z8NTSRyMA2Fd33n5dQ8lWUE00s/" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://unpkg.com/bootstrap-table@1.16.0/dist/bootstrap-table.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/user.css') }}">
+    <meta charset="UTF-8">
+
+</head>
+<body>
+<form>
+
+{% set consent_logs=False %}
+        {% set consent_watches=False %}
+        {% for meta in user.user_metadata %}
+            {% if meta.key=="consent-logs" %}
+                {% set consent_logs=meta.value %}
+            {% elif meta.key=="consent-watches" %}
+                {% set consent_watches=meta.value %}
+            {% endif %}
+        {% endfor %}
+
+
+    <fieldset class="form-check">
+
+
+        <input class="form-check-input" type="checkbox" value="" id="consent-logs"
+
+        {% if consent_logs is sameas true %}
+            checked
+        {%  endif %}
+        >
+        <label class="form-check-label" for="defaultCheck1">
+            I allow saving the suggestions made to me by content-providers.
+        </label>
+    </fieldset>
+
+    <fieldset class="form-check">
+        <input class="form-check-input" type="checkbox" value="" id="consent-watches"
+
+        {% if consent_watches is sameas true %}
+            checked
+        {%  endif %}
+        >
+        <label class="form-check-label" for="defaultCheck1">
+            I allow saving the list of content I watch through content-providers.
+        </label>
+    </fieldset>
+
+    <div class="form-check">
+        <button type="button" class="btn btn-danger">Please forget all my data</button>
+    </div>
+
+
+</form>
+
+
+<script type="application/javascript">
+    function save_preference(elt) {
+        var parent=elt.target.parentElement;
+        parent.setAttribute('disabled', 'disabled');
+        var key = elt.target.id;
+        var value = elt.target.checked;
+
+        var oReq = new XMLHttpRequest();
+        oReq.addEventListener("load", function(elt){
+            console.log("preference saved");
+            parent.removeAttribute('disabled');
+
+        });
+        oReq.open("POST", "/{{ user.extension_id }}/metadata?" + key + "=" + value);
+        oReq.send();
+
+    }
+
+
+    document.getElementById("consent-logs").addEventListener("click", save_preference);
+    document.getElementById("consent-watches").addEventListener("click", save_preference);
+
+</script>
+</body>
+</html>
