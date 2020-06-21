@@ -42,5 +42,5 @@ update-version-%: bootstrap bump-%
 	$(eval PROD_PACKAGE_FILE :=$(shell ./release.sh "$(PROD_DEST_DIR)" "$(APP_NAME)" "$(VERSION_NEW)" "$(TARGET_SERVER)" "0" ))
 	
 
-publish: update-version-release
+publish: 
 	./publish.sh $(APP_ID) $(PROD_PACKAGE_FILE)
