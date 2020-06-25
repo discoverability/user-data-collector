@@ -33,18 +33,20 @@ def get_dataviz_users():
         user_data["user_id"] = u.extension_id
         user_data["creation_date"] = u.creation_date.timestamp()
         user_data["sessions"] = []
-        for l in {l.single_page_session_id for l in u.lolomos}:
+        for lolomo in {l for l in u.lolomos}:
+            l = lolomo.single_page_session_id
             session_data = {}
             session_data["session_id"] = l
-            creation_date=next((ll.timestamp for ll in u.lolomos if ll.single_page_session_id == l))
-            session_data["creation_date"] =creation_date.timestamp()
+            creation_date = next((ll.timestamp for ll in u.lolomos if ll.single_page_session_id == l))
+            session_data["creation_date"] = creation_date.timestamp()
 
             link_data = {}
-            link_data["name"]="thumbnails"
-            link_data["href"]="/dataviz-api/v1/thumbnails/%s/%s"%(u.extension_id,l)
+            link_data["name"] = "thumbnails"
+            link_data["href"] = "/dataviz-api/v1/thumbnails/%s/%s" % (u.extension_id, l)
             session_data["links"] = [link_data]
             user_data["sessions"].append(session_data)
-        res.append(user_data)
+        if len(user_data["sessions"]) > 0:
+            res.append(user_data)
 
     return json.dumps(res, cls=SetEncoder), 200, {'Content-Type': 'application/json'}
 

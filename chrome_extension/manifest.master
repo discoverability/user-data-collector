@@ -1,6 +1,6 @@
 {
   "name": "Sorbonne Forever",
-  "version": "5.2.5",
+  "version": "5.2.6",
   "description": "An experiment by researchers at the Sorbonne aiming to gain a better understanding of “prime-space” dynamics on Netflix.",
   "permissions": [
     "activeTab",
