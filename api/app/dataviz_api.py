@@ -16,8 +16,8 @@ def get_dataviz_users():
         user_data["creation_date"] = u.creation_date.timestamp()
         user_data["sessions"] = []
         visited_sessions = []
-        for lolomo in {l for l in u.lolomos}:
-            l = lolomo.single_page_session_id
+        for suggestions in {l for l in u.suggestions}:
+            l = suggestions.single_page_session_id
             if l not in visited_sessions:
                 visited_sessions.append(l)
                 session_data = {}
