@@ -28,13 +28,13 @@ jq ".content_scripts += [{\"matches\": [\"$TARGET_SERVER/set_robot\"],\"js\": [\
 if [ $DEV_BUILD -eq 1 ]; then
 jq '.permissions += ["http://localhost:5000/set_robot"]' $TARGET_FILE  |sponge $TARGET_FILE 
 jq '.content_scripts[1].matches += ["http://localhost:5000/set_robot"]' $TARGET_FILE  |sponge $TARGET_FILE 
+echo "var BASE_URL=\"http://localhost:5000\";" > $TARGET_FOLDER/server.js
 export RELEASE_TYPE="dev"
 else
 export RELEASE_TYPE="prod"
+echo "var BASE_URL=\"https://conso-api.vod-prime.space\";" > $TARGET_FOLDER/server.js
 fi
 
-#change production server URL
-echo "var BASE_URL=\"https://conso-api.vod-prime.space\";" > $TARGET_FOLDER/server.js
 
 cd $TARGET_FOLDER 
 

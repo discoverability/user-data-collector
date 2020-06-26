@@ -1,2 +1,1 @@
-var BASE_URL="https://conso-api.vod-prime.space";
-console.log("server.js loaded")
+var BASE_URL="https://localhost:5000";
