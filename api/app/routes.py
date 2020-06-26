@@ -1,19 +1,122 @@
 from app.models import StreamLog, User, NetflixSuggestMetadata, NetflixWatchMetadata, Lolomo, UserMetaData, AuthorizedIP
+import json
 from flask import request, make_response, render_template, abort
 from app import app
 from app import db
+import werkzeug.exceptions as ex
 import time
 import datetime
+import logging
+import collections
 import sqlalchemy
-from operator import attrgetter
 
-from itertools import groupby
+from functools import wraps
+
+CONSENT_WATCHES = "consent-watches"
+
+CONSENT_LOGS = "consent-logs"
+
+
+class SetEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, set):
+            return list(obj)
+        return json.JSONEncoder.default(self, obj)
+
+
+@app.route("/dataviz-api/v1/users", methods=['GET'])
+def get_dataviz_users():
+    users = db.session.query(User).all()
+    res = []
+    for u in users:
+        user_data = {}
+        user_data["user_id"] = u.extension_id
+        user_data["creation_date"] = u.creation_date.timestamp()
+        user_data["sessions"] = []
+        for l in {l.single_page_session_id for l in u.lolomos}:
+            session_data = {}
+            session_data["session_id"] = l
+            creation_date=next((ll.timestamp for ll in u.lolomos if ll.single_page_session_id == l))
+            session_data["creation_date"] =creation_date.timestamp()
+
+            link_data = {}
+            link_data["name"]="thumbnails"
+            link_data["href"]="/dataviz-api/v1/thumbnails/%s/%s"%(u.extension_id,l)
+            session_data["links"] = [link_data]
+            user_data["sessions"].append(session_data)
+        res.append(user_data)
+
+    return json.dumps(res, cls=SetEncoder), 200, {'Content-Type': 'application/json'}
+
+
+@app.route("/dataviz-api/v1/thumbnails/<user_id>/<session_id>", methods=['GET'])
+def get_thumbnails_data(user_id, session_id):
+    data = []
+
+    suggests = (db.session.query(User, NetflixSuggestMetadata).order_by(NetflixSuggestMetadata.timestamp)
+                .filter(User.id == NetflixSuggestMetadata.user_id)
+                .filter(User.extension_id == user_id)
+                .filter(NetflixWatchMetadata.single_page_session_id == session_id)
+                .order_by(NetflixSuggestMetadata.timestamp, NetflixSuggestMetadata.row, NetflixSuggestMetadata.rank)
+                .all())
+
+    suggests = {"%s/%03d/%03d" % (s.timestamp.strftime("%m%d%H%M"), s.row, s.rank): s for _, s in suggests}
+
+    # listings = [list(g) for  g in groupby(suggests, attrgetter('timestamp','row','rank'))]
+
+    res = "<html><body>#timestamp;ip;content_id;location;row;rank;app_view<br>"
+    for k_suggest in sorted(suggests):
+        suggest = suggests[k_suggest]
+        item = {}
+        item["content_id"] = suggest.video_id
+        item["row"] = suggest.row
+        item["col"] = suggest.rank
+        data.append(item)
+    return json.dumps(data), 200, {'Content-Type': 'application/json'}
 
 
 def guard_ip(ip):
     ip = db.session.query(AuthorizedIP).filter(AuthorizedIP.ip == ip).first()
     if ip is None:
-        abort(403)
+        abort(403, "Your IP is not authorized to use this feature. Contact Admin")
+
+
+def guard_log_consent(u):
+    for metadata in u.user_metadata:
+        if metadata.key == CONSENT_LOGS:
+            if metadata.value != "true":
+                abort(400, "Can't save your data without your consent. Update your privacy configuration")
+            else:
+                return
+    logging.warn("user " + u.extension_id + " tried to submit log without consent")
+    abort(400, "Can't save your data without your consent. Update your privacy configuration")
+
+
+def guard_watch_consent(u):
+    for metadata in u.user_metadata:
+        if metadata.key == CONSENT_WATCHES:
+            if metadata.value != "true":
+                abort(400, "Can't save your data without your consent. Update your privacy configuration")
+            else:
+                return
+    logging.warn("user" + u.extension_id + " tried to submit watch without consent")
+    abort(400, "Can't save your data without your consent. Update your privacy configuration")
+
+
+def guard_user_consent(user):
+    consent = db.session.query(UserMetaData).filter(UserMetaData.user_id == user.id).filter(
+        UserMetaData.key == "consent-logs").first()
+    if consent is not None and consent.value == "false":
+        abort(200)
+
+
+@app.route("/<extension_id>/privacy", methods=['GET'])
+def privacy_form(extension_id):
+    u = db.session.query(User).filter_by(extension_id=extension_id).first()
+    if u is None:
+        return abort(404, "not such user")
+
+    return render_template('privacy.html', user=u)
 
 
 @app.route("/<extension_id>/netflix", methods=['GET'])
@@ -39,7 +142,9 @@ def list_netflix_logs_for_user(extension_id):
     res = "<html><body>#timestamp;ip;content_id;location;row;rank;app_view<br>"
     for k_suggest in sorted(suggests):
         suggest = suggests[k_suggest]
-        res += "".join([("{};\t" * 8 + "<a href='{}'>{}</a>;" + "<br>").format(suggest.timestamp, "XXXXX",
+        res += "".join([("{};\t" * 8 + "<a href='{}'>{}</a>;" + "<br>").format(suggest.timestamp,
+                                                                               # suggest.ip,
+                                                                               "unknown",
                                                                                suggest.video_id, suggest.track_id,
                                                                                suggest.location,
                                                                                suggest.row, suggest.rank,
@@ -66,7 +171,9 @@ def list_netflix_lolomo_for_user(extension_id):
     for lolomo_k in sorted(lolomos):
         lolomo = lolomos[lolomo_k]
 
-        res += "".join([("{};\t" * 7 + "<br>").format(lolomo.timestamp, "XXXXX", #lolomo.ip,
+        res += "".join([("{};\t" * 7 + "<br>").format(lolomo.timestamp,
+                                                      # lolomo.ip,
+                                                      "unknown",
                                                       lolomo.rank,
                                                       lolomo.type,
                                                       lolomo.associated_content,
@@ -88,7 +195,8 @@ def list_netflix_lolomo_latest_for_user(extension_id):
 
     res = "#timestamp;ip;rank;type;associated_content;full_text_description;single_page_session_id<br>"
     for lolomo in q.all():
-        res += "".join([("{};\t" * 7 + "<br>").format(lolomo.timestamp, "X.X.X.X", #lolomo.ip,
+        res += "".join([("{};\t" * 7 + "<br>").format(lolomo.timestamp,
+                                                      "unknown",
                                                       lolomo.rank,
                                                       lolomo.type,
                                                       lolomo.associated_content,
@@ -111,7 +219,7 @@ def list_netflix_lolomo_for_user_for_lolomo_id(extension_id, single_page_session
 
     res = "#timestamp;ip;rank;type;associated_content;full_text_description;single_page_session_id<br>"
     for _, lolomo in q.all():
-        res += "".join([("{};\t" * 6 + "<br>").format(lolomo.timestamp, "X.X.X.X",#lolomo.ip,
+        res += "".join([("{};\t" * 6 + "<br>").format(lolomo.timestamp, "X.X.X.X",  # lolomo.ip,
                                                       lolomo.rank,
                                                       lolomo.type,
                                                       lolomo.associated_content,
@@ -132,7 +240,10 @@ def list_netflix_watches_for_user(extension_id):
     res = "#timestamp;ip;video_id;track_id;rank;row;list_id;request_id;lolomo_id<br>"
     for (user, watch) in q.all():
         res += "%s;\t%s\t%s\t;%s;\t%s\t;%s\t;%s\t;%s\t;%s\t;<br>" % (
-            watch.timestamp, "X.X.X.X",  str(watch.video_id), str(watch.track_id), str(watch.rank), str(watch.row),
+            watch.timestamp,
+            # watch.ip,
+            "unknown",
+            str(watch.video_id), str(watch.track_id), str(watch.rank), str(watch.row),
             watch.list_id, watch.request_id, watch.lolomo_id)
 
     return make_response(res, 200)
@@ -155,7 +266,7 @@ def list_users():
         q = q.filter(UserMetaData.key == key).filter(UserMetaData.value == request.args.get(key))
 
     users = [u for u, _ in q.all()]
-    return render_template('users.html', users=users)
+    return render_template('users.html', users=set(users))
 
 
 @app.route("/<extension_id>", methods=['GET'])
@@ -171,6 +282,13 @@ def get_user_data(extension_id):
 def create_user(extension_id):
     u = User(extension_id=extension_id)
     db.session.add(u)
+
+    consent_logs = UserMetaData(user=u, key=CONSENT_LOGS, value="true")
+    consent_watches = UserMetaData(user=u, key=CONSENT_WATCHES, value="true")
+
+    db.session.add(consent_logs)
+    db.session.add(consent_watches)
+
     try:
         db.session.commit()
     except sqlalchemy.exc.IntegrityError:
@@ -184,6 +302,7 @@ def add_netflix_suggest_log(extension_id):
     u = db.session.query(User).filter_by(extension_id=extension_id).first()
     if u is None:
         return make_response("NO SUCH extension_id REGISTERED", 404)
+    guard_log_consent(u)
     payload = request.get_json()
 
     n = NetflixSuggestMetadata(ip=request.remote_addr, user=u, list_id=payload.get("list_id", None),
@@ -211,6 +330,8 @@ def add_netflix_lolomo_log(extension_id):
     u = db.session.query(User).filter_by(extension_id=extension_id).first()
     if u is None:
         return make_response("NO SUCH extension_id REGISTERED", 404)
+
+    guard_log_consent(u)
     payload = request.get_json()
 
     n = Lolomo(ip=request.remote_addr, user=u,
@@ -233,6 +354,8 @@ def add_netflix_watch_log(extension_id, video_id):
     u = db.session.query(User).filter_by(extension_id=extension_id).first()
     if u is None:
         return make_response("NO SUCH extension_id REGISTERED", 404)
+
+    guard_watch_consent(u)
     payload = request.get_json()
 
     n = NetflixWatchMetadata(video_id=video_id,
@@ -308,14 +431,16 @@ def del_users():
 def add_log_for_user(extension_id, content_id):
     u = db.session.query(User).filter_by(extension_id=extension_id).first()
     if u is None:
+        logging.error("Unknown User " + extension_id + " tried to log data")
         return make_response("NO SUCH extension_id REGISTERED", 404)
+    guard_log_consent(u)
     s = StreamLog(content_id=content_id, ip=request.remote_addr, user=u)
     db.session.add(s)
     db.session.commit()
     return make_response("CREATED {} {}".format(s.content_id, u.extension_id), 201)
 
 
-@app.route("/<extension_id>/metadata", methods=["POST"])
+@app.route("/<extension_id>/metadata", methods=["POST", "GET"])
 def add_user_metadata(extension_id):
     u = db.session.query(User).filter_by(extension_id=extension_id).first()
     if u is None:

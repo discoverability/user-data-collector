@@ -6,13 +6,10 @@ bootstrap:
 	wget $(DRIVER_URL) -O driver.zip
 	unzip -o -d . driver.zip
 	sudo bundle install
+	cd ../chrome_extension && $(MAKE) build
+	cp ../chrome_extension/build/DiscoSorbonne-prod.crx chrome_extension.crx
 clean:
-	rm -f ../chrome_extension.pem
-	rm -f ../chrome_extension.crx
 	rm -f ./chrome_extension.crx
-pack: clean
-	cd .. && google-chrome-stable --pack-extension=chrome_extension |true 
-	cp ../chrome_extension.crx .
 
-run: pack
+run: 
 	./runall.sh

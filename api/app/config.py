@@ -12,11 +12,10 @@ class DevConfig(object):
 class ProdConfig(object):
     SQLALCHEMY_DATABASE_URI= "mysql://discoverability:aWuathigh8Ui@ts236797-001.dbaas.ovh.net:35824/discoverability"
     DEVELOPMENT=False
-    DEBUG=False
+    DEBUG=True
     SQLALCHEMY_TRACK_MODIFICATIONS=False
-    SQLALCHEMY_ENGINE_OPTIONS={"pool_size":100,"max_overflow":100}
     logging.basicConfig(filename='/var/log/chrome/discoverability/conso-api.log', level=logging.INFO)
-
+    SQLALCHEMY_ENGINE_OPTIONS={"pool_size":100,"max_overflow":100,"pool_recycle": 280 }
 
 
 env=os.environ.get("APP_ENV","development")
