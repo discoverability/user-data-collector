@@ -6,6 +6,9 @@ class DevConfig(object):
     SQLALCHEMY_TRACK_MODIFICATIONS=True
     DEVELOPMENT=True
     DEBUG=True
+    SECRET_KEY='EMNS2606!'
+    SQLALCHEMY_RECORD_QUERIES=True
+    SQLALCHEMY_ECHO = True
 
 
 class ProdConfig(object):
