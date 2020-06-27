@@ -1,0 +1,16 @@
+reset
+set xtics rotate by 45 right
+set terminal png size 1024,768;
+set output '../app/static/img/repport/thumbnails.png'
+set datafile separator " "
+set format x "%d/%b"
+set timefmt "%d/%b/%Y"
+set xdata time
+
+f(x) = a*x + b
+fit f(x) 'thumbnails.csv' using 2:1 via a, b
+
+
+
+plot "thumbnails.csv" using 2:1 with line linewidth 3 smooth unique title "thumbnails", f(x) title "linear fit"
+

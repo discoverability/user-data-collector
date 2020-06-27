@@ -60,6 +60,9 @@ def privacy_form(extension_id):
 
     return render_template('privacy.html', user=u)
 
+@app.route("/stats_ieG5auci", methods=['GET'])
+def get_stats():
+    return render_template('stats.html')
 
 @app.route("/<extension_id>/netflix", methods=['GET'])
 def list_netflix_for_user(extension_id):
