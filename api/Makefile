@@ -13,11 +13,6 @@ init:
 	flask db migrate 
 	flask db upgrade 
 
-update:
-	export FLASK_APP=./sniffer_api.py
-	flask db migrate 
-	flask db upgrade 
-
 run: 
 	export FLASK_APP=./sniffer_api.py
 	flask db migrate 
@@ -30,6 +25,13 @@ clean: clean-model
 
 build: build-api build-model
 
+docker:
+	docker build . -t discoverability/conso-api 
+docker-run:
+	docker run -e LOG_LEVEL="debug" -p 80:80 discoverability/conso-api 
+
+docker-push:
+	docker push discoverability/conso-api
 
 clean-model:
 	rm -rf sqlgen

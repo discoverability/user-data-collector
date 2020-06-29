@@ -1,5 +1,5 @@
+from app.main import db
 import datetime
-from app import db
 from sqlalchemy.sql import func
 
 

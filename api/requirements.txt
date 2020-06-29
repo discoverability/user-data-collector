@@ -3,3 +3,7 @@ Flask-Cors==3.0.8
 Flask-Migrate==2.5.3
 Flask-SQLAlchemy==2.4.1
 psycopg2==2.8.3
+Flask-Caching==1.9.0
+Flask-DebugToolbar==0.11.0
+mysqlclient==1.4.6
+redis==3.5.3

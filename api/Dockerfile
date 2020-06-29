@@ -1,9 +1,7 @@
-FROM python:3.7.4
+FROM tiangolo/meinheld-gunicorn-flask:python3.8
 
-RUN apt-get update && apt-get install -y postgresql
+COPY ./requirements.txt /tmp
+RUN pip install -r /tmp/requirements.txt
+COPY ./app /app
 
-COPY . /app/
 
-WORKDIR /app
-
-RUN pip install -r /app/requirements.txt

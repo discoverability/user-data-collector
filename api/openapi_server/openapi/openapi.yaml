@@ -1,0 +1,255 @@
+openapi: 3.0.2
+info:
+  title: Davatiz API
+  version: 0.1.0
+servers:
+- url: https://virtserver.swaggerhub.com/discoverability/dataviz-api/0.1.0
+- url: https://conso-api.vod-prime.space/v1
+paths:
+  /check_criteria:
+    post:
+      operationId: check_criteria_post
+      requestBody:
+        content:
+          application/json:
+            example:
+              items:
+              - content_id1
+              - content_id2
+              query:
+                name: AND
+                operand1:
+                  subject: content_type
+                  predicate: =
+                  object: FILM
+                operand2:
+                  subject: production_country
+                  predicate: =
+                  object: FR
+            schema:
+              $ref: '#/components/schemas/CheckCriteriaRequest'
+        description: allow criteria checking for a list of content
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              example:
+                items:
+                - content_id: content_id1
+                  match: true
+                - content_id: content_id2
+                  match: false
+              schema:
+                $ref: '#/components/responses/CheckCriteriaResponses'
+          description: OK
+      x-openapi-router-controller: openapi_server.controllers.default_controller
+  /thumbnails/{user_id}/{session_id}:
+    get:
+      description: provides a list of users and their associated streaming sessions
+      operationId: thumbnails_user_id_session_id_get
+      parameters:
+      - description: user anonymised id
+        explode: false
+        in: path
+        name: user_id
+        required: true
+        schema:
+          type: string
+        style: simple
+      - description: session for a particular user
+        explode: false
+        in: path
+        name: session_id
+        required: true
+        schema:
+          type: string
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              example: '[["80192098",2,1],["70237215",4,3]]'
+              schema:
+                $ref: '#/components/schemas/ThumbnailsResponses'
+          description: contains a list of contents and their location in the page
+      x-openapi-router-controller: openapi_server.controllers.default_controller
+  /users:
+    get:
+      operationId: users_get
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponses'
+          description: Contains the list of users and their associated streaming sessions
+      x-openapi-router-controller: openapi_server.controllers.default_controller
+components:
+  responses:
+    CheckCriteriaResponses:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/CheckCriteriaResponses'
+      description: provides a boolean flag for each content_id passed in parameter
+        when considering the Criteria
+    UserResponses:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/UserResponses'
+      description: Contains the list of users and their associated streaming sessions
+    ThumbnailsResponses:
+      content:
+        application/json:
+          example: '[["80192098",2,1],["70237215",4,3]]'
+          schema:
+            $ref: '#/components/schemas/ThumbnailsResponses'
+      description: contains a list of contents and their location in the page
+  schemas:
+    Predicate:
+      enum:
+      - <=
+      - =
+      - '>='
+      - '!='
+      type: string
+    Subject:
+      enum:
+      - content_type
+      - production_country
+      - originals
+      - festivals
+      type: string
+    User:
+      example:
+        session_ids:
+        - '["b7ec9816-a475-4bb5-9858-e723ce04a217","14d11e7d-dd21-470c-ba7a-a7ce92a816bf"]'
+        - '["b7ec9816-a475-4bb5-9858-e723ce04a217","14d11e7d-dd21-470c-ba7a-a7ce92a816bf"]'
+        user_id: d4ef192c-54fd-48ee-8363-bfe30e501a04
+      properties:
+        user_id:
+          example: d4ef192c-54fd-48ee-8363-bfe30e501a04
+          type: string
+        session_ids:
+          items:
+            example: '["b7ec9816-a475-4bb5-9858-e723ce04a217","14d11e7d-dd21-470c-ba7a-a7ce92a816bf"]'
+            minLength: 1
+            type: string
+          type: array
+      type: object
+    BooleanCondition:
+      required:
+      - name
+      type: object
+    Criteria:
+      allOf:
+      - $ref: '#/components/schemas/BooleanCondition'
+      - $ref: '#/components/schemas/Criteria_allOf'
+      description: a triple expressing a selection criteria for content attributes
+    Thumbnail:
+      description: a suggestion for a content made by the content provider located
+        at the given coordinates on the screen
+      example:
+        col: 6
+        content_id: content_id
+        row: 0
+      properties:
+        content_id:
+          type: string
+        row:
+          type: integer
+        col:
+          type: integer
+      type: object
+    ContentMatchCriteria:
+      description: tells if the content match a certain criteria
+      example:
+        content_id: content_id
+        match: true
+      properties:
+        content_id:
+          type: string
+        match:
+          type: boolean
+      type: object
+    CheckCriteriaRequest:
+      example:
+        items:
+        - content_id1
+        - content_id2
+        query:
+          name: "TRUE"
+          operand:
+            subject: content_type
+            predicate: =
+            object: FILM
+      properties:
+        content_ids:
+          items:
+            example: content_id
+            type: string
+          type: array
+        query:
+          required:
+          - name
+          type: object
+      type: object
+    LogicalUnaryOperator:
+      allOf:
+      - $ref: '#/components/schemas/BooleanCondition'
+      - $ref: '#/components/schemas/LogicalUnaryOperator_allOf'
+    LogicalBinaryOperator:
+      allOf:
+      - $ref: '#/components/schemas/BooleanCondition'
+      - $ref: '#/components/schemas/LogicalBinaryOperator_allOf'
+    CheckCriteriaResponses:
+      items:
+        $ref: '#/components/schemas/ContentMatchCriteria'
+      type: array
+    UserResponses:
+      items:
+        $ref: '#/components/schemas/User'
+      type: array
+    ThumbnailsResponses:
+      items:
+        $ref: '#/components/schemas/Thumbnail'
+      type: array
+    Criteria_allOf:
+      properties:
+        name:
+          default: criteria
+          type: string
+        subject:
+          $ref: '#/components/schemas/Subject'
+        predicate:
+          $ref: '#/components/schemas/Predicate'
+        object:
+          type: string
+    LogicalUnaryOperator_allOf:
+      properties:
+        name:
+          enum:
+          - "TRUE"
+          - "FALSE"
+          type: string
+        operand:
+          required:
+          - name
+          type: object
+    LogicalBinaryOperator_allOf:
+      properties:
+        name:
+          enum:
+          - AND
+          - OR
+          type: string
+        operand1:
+          required:
+          - name
+          type: object
+        operand2:
+          required:
+          - name
+          type: object

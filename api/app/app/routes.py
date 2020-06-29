@@ -1,11 +1,10 @@
+
 from app.models import StreamLog, User, NetflixSuggestMetadata, NetflixWatchMetadata, Lolomo, UserMetaData, AuthorizedIP
 import json
 from flask import request, make_response, render_template, abort
-from app import app
-from app import db
 import logging
 import sqlalchemy
-
+from app.main import app, db
 CONSENT_WATCHES = "consent-watches"
 CONSENT_LOGS = "consent-logs"
 

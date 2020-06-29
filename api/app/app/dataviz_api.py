@@ -1,12 +1,12 @@
 import json
-
-from app import app, db
+from flask import request
+from app.main import app as api, db, cache
 from app.models import User, NetflixSuggestMetadata, NetflixWatchMetadata
 from app.routes import SetEncoder
-from flask import request, make_response
 
 
-@app.route("/dataviz-api/v1/users", methods=['GET'])
+@api.route("/dataviz-api/v1/users", methods=['GET'])
+@cache.cached(timeout=50)
 def get_dataviz_users():
     users = db.session.query(User).all()
     res = []
@@ -40,7 +40,7 @@ def get_dataviz_users():
     return json.dumps(res, cls=SetEncoder), 200, {'Content-Type': 'application/json'}
 
 
-@app.route("/dataviz-api/v1/thumbnails/<user_id>/<session_id>", methods=['GET'])
+@api.route("/dataviz-api/v1/thumbnails/<user_id>/<session_id>", methods=['GET'])
 def get_thumbnails_data(user_id, session_id):
     data = []
 
@@ -66,7 +66,7 @@ def get_thumbnails_data(user_id, session_id):
     return json.dumps(data), 200, {'Content-Type': 'application/json'}
 
 
-@app.route("/dataviz-api/v1/thumbnails/<user_id>/<session_id>/watches", methods=['GET'])
+@api.route("/dataviz-api/v1/thumbnails/<user_id>/<session_id>/watches", methods=['GET'])
 def get_user_watch_for_session(user_id, session_id):
     data = []
 
