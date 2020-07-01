@@ -5,8 +5,8 @@ from app.models import User, NetflixSuggestMetadata, NetflixWatchMetadata
 from app.routes import SetEncoder
 
 
-@api.route("/dataviz-api/v1/users", methods=['GET'])
-@cache.cached(timeout=50)
+@api.route("/api/users", methods=['GET'])
+@cache.cached(timeout=3600)
 def get_dataviz_users():
     users = db.session.query(User).all()
     res = []
@@ -27,11 +27,11 @@ def get_dataviz_users():
 
                 link_data = {}
                 link_data["name"] = "thumbnails"
-                link_data["href"] = request.host_url + "dataviz-api/v1/thumbnails/%s/%s" % (u.extension_id, l)
+                link_data["href"] = "/dataviz-api/v1/thumbnails/%s/%s" % (u.extension_id, l)
 
                 watch_link = {}
                 watch_link["name"] = "watches"
-                watch_link["href"] = request.host_url + "dataviz-api/v1/thumbnails/%s/%s/watches" % (u.extension_id, l)
+                watch_link["href"] = "/dataviz-api/v1/thumbnails/%s/%s/watches" % (u.extension_id, l)
                 session_data["links"] = [link_data, watch_link]
                 user_data["sessions"].append(session_data)
         if len(user_data["sessions"]) > 0:
@@ -40,7 +40,8 @@ def get_dataviz_users():
     return json.dumps(res, cls=SetEncoder), 200, {'Content-Type': 'application/json'}
 
 
-@api.route("/dataviz-api/v1/thumbnails/<user_id>/<session_id>", methods=['GET'])
+@api.route("/api/thumbnails/<user_id>/<session_id>", methods=['GET'])
+@cache.cached(timeout=3600)
 def get_thumbnails_data(user_id, session_id):
     data = []
 
@@ -66,7 +67,8 @@ def get_thumbnails_data(user_id, session_id):
     return json.dumps(data), 200, {'Content-Type': 'application/json'}
 
 
-@api.route("/dataviz-api/v1/thumbnails/<user_id>/<session_id>/watches", methods=['GET'])
+@api.route("/api/thumbnails/<user_id>/<session_id>/watches", methods=['GET'])
+@cache.cached(timeout=3600)
 def get_user_watch_for_session(user_id, session_id):
     data = []
 
@@ -103,15 +105,15 @@ def get_user_watch_for_session(user_id, session_id):
 
                 {
                     "name": "thumbnails",
-                    "href": request.host_url + "dataviz-api/v1/thumbnails/%s/%s" % (user_id, session_id)
+                    "href":  "/dataviz-api/v1/thumbnails/%s/%s" % (user_id, session_id)
                 },
                 {
                     "name": "user",
-                    "href": request.host_url + "%s" % (user_id)
+                    "href": "/" + "%s" % (user_id)
                 },
                 {
                     "name": "all_watches",
-                    "href": request.host_url + "%s/netflix/watches" % (user_id)
+                    "href": "/" + "%s/netflix/watches" % (user_id)
                 }
             ]}
 

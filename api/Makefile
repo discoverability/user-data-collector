@@ -8,17 +8,12 @@ bootstrap:
 	sh ./get.docker.sh
 
 init:
-	export FLASK_APP=./sniffer_api.py
-	flask db init 
-	flask db migrate 
-	flask db upgrade 
-
+	cd app &&	FLASK_APP=app.main flask db init && 	FLASK_APP=app.main flask db migrate &&	FLASK_APP=app.main flask db upgrade 
 run: 
-	export FLASK_APP=./sniffer_api.py
-	flask db migrate 
-	flask db upgrade 
-	flask run 
+	cd app && 	FLASK_APP=app.main flask db migrate && FLASK_APP=app.main flask db upgrade &&	FLASK_APP=app.main flask run 
 
+run-prod:
+	cd app && APP_ENV=production FLASK_APP=app.main flask run 
 all: clean build
 
 clean: clean-model

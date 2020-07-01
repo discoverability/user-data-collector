@@ -11,17 +11,15 @@ class DevConfig(object):
     SECRET_KEY = 'EMNS2606!'
     SQLALCHEMY_RECORD_QUERIES = True
     SQLALCHEMY_ECHO = True
-
-
     CACHE_TYPE = "simple"  # Flask-Caching related configs
 
 
 
 class ProdConfig(object):
-    SQLALCHEMY_DATABASE_URI = "mysql://discoverability:aWuathigh8Ui@ts236797-001.dbaas.ovh.net:35824/discoverability"
+    SQLALCHEMY_DATABASE_URI=os.environ.get("SQLALCHEMY_DATABASE_URI")
     #SQLALCHEMY_DATABASE_URI = 'sqlite:///' + os.path.join(basedir, 'app.db')
-    DEVELOPMENT = True
-    DEBUG = True  # some Flask specific configs
+    DEVELOPMENT = False
+    DEBUG = False  # some Flask specific configs
     SECRET_KEY = 'EMNS2606!'
 
     SQLALCHEMY_TRACK_MODIFICATIONS = False
@@ -39,3 +37,4 @@ if (env == "production"):
     config = ProdConfig()
 else:
     config = DevConfig()
+print("[CONSO-API] using %s config " % str(type(config)))

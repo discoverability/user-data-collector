@@ -20,8 +20,9 @@ services:
       - "traefik.http.routers.conso-api.rule=Host(`conso-api.docker.localhost`)"
     environment:
       - LOG_LEVEL="debug"
-      - APP_ENV="production"
+      - APP_ENV="development"
       - CACHE_REDIS_URL="redis://redis-cache:6379"
+      - SQLALCHEMY_DATABASE_URI="mysql://discoverability:aWuathigh8Ui@ts236797-001.dbaas.ovh.net:35824/discoverability"
   redis-cache:
     image: redis
 

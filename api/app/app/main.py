@@ -9,16 +9,18 @@ from flask_caching import Cache
 
 basedir = os.path.abspath(os.path.dirname(__file__))
 
-app=Flask(__name__)
+app = Flask(__name__)
 
 app.jinja_env.add_extension('jinja2.ext.do')
 CORS(app)
 
 from app.config import config
+
 app.config.from_object(config)
 cache = Cache(app)
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
 toolbar = DebugToolbarExtension(app)
 
-import app.routes
+from app.routes import *
+from app.dataviz_api import *
