@@ -1,3 +1,4 @@
+import ipaddress
 from app.models import StreamLog, User, NetflixSuggestMetadata, NetflixWatchMetadata, Lolomo, UserMetaData, AuthorizedIP
 import json
 from flask import request, make_response, render_template, abort
@@ -16,6 +17,8 @@ CONSENT_WATCHES = "consent-watches"
 
 CONSENT_LOGS = "consent-logs"
 
+mask=int(ipaddress.ip_address("255.255.0.0"))
+annon_ip=lambda x:str(ipaddress.ip_address( int(ipaddress.ip_address(x)) & mask) )
 
 class SetEncoder(json.JSONEncoder):
     def default(self, obj):
@@ -143,8 +146,7 @@ def list_netflix_logs_for_user(extension_id):
     for k_suggest in sorted(suggests):
         suggest = suggests[k_suggest]
         res += "".join([("{};\t" * 8 + "<a href='{}'>{}</a>;" + "<br>").format(suggest.timestamp,
-                                                                               # suggest.ip,
-                                                                               "unknown",
+                                                                               suggest.ip,
                                                                                suggest.video_id, suggest.track_id,
                                                                                suggest.location,
                                                                                suggest.row, suggest.rank,
@@ -172,8 +174,7 @@ def list_netflix_lolomo_for_user(extension_id):
         lolomo = lolomos[lolomo_k]
 
         res += "".join([("{};\t" * 7 + "<br>").format(lolomo.timestamp,
-                                                      # lolomo.ip,
-                                                      "unknown",
+                                                      lolomo.ip,
                                                       lolomo.rank,
                                                       lolomo.type,
                                                       lolomo.associated_content,
@@ -196,7 +197,7 @@ def list_netflix_lolomo_latest_for_user(extension_id):
     res = "#timestamp;ip;rank;type;associated_content;full_text_description;single_page_session_id<br>"
     for lolomo in q.all():
         res += "".join([("{};\t" * 7 + "<br>").format(lolomo.timestamp,
-                                                      "unknown",
+                                                      lolomo.ip,
                                                       lolomo.rank,
                                                       lolomo.type,
                                                       lolomo.associated_content,
@@ -219,7 +220,7 @@ def list_netflix_lolomo_for_user_for_lolomo_id(extension_id, single_page_session
 
     res = "#timestamp;ip;rank;type;associated_content;full_text_description;single_page_session_id<br>"
     for _, lolomo in q.all():
-        res += "".join([("{};\t" * 6 + "<br>").format(lolomo.timestamp, "X.X.X.X",  # lolomo.ip,
+        res += "".join([("{};\t" * 6 + "<br>").format(lolomo.timestamp, lolomo.ip,
                                                       lolomo.rank,
                                                       lolomo.type,
                                                       lolomo.associated_content,
@@ -241,8 +242,7 @@ def list_netflix_watches_for_user(extension_id):
     for (user, watch) in q.all():
         res += "%s;\t%s\t%s\t;%s;\t%s\t;%s\t;%s\t;%s\t;%s\t;<br>" % (
             watch.timestamp,
-            # watch.ip,
-            "unknown",
+            watch.ip,
             str(watch.video_id), str(watch.track_id), str(watch.rank), str(watch.row),
             watch.list_id, watch.request_id, watch.lolomo_id)
 
@@ -305,7 +305,7 @@ def add_netflix_suggest_log(extension_id):
     guard_log_consent(u)
     payload = request.get_json()
 
-    n = NetflixSuggestMetadata(ip=request.remote_addr, user=u, list_id=payload.get("list_id", None),
+    n = NetflixSuggestMetadata(ip=annon_ip(request.remote_addr), user=u, list_id=payload.get("list_id", None),
                                location=payload.get("location", None),
                                rank=payload.get("rank", None), request_id=payload.get("request_id", None),
                                row=payload.get("row", None), track_id=payload.get("track_id", None),
@@ -334,7 +334,7 @@ def add_netflix_lolomo_log(extension_id):
     guard_log_consent(u)
     payload = request.get_json()
 
-    n = Lolomo(ip=request.remote_addr, user=u,
+    n = Lolomo(ip=annon_ip(request.remote_addr), user=u,
                rank=payload.get("rank", None),
                type=payload.get("type", None),
                associated_content=payload.get("associated_content", None),
@@ -365,7 +365,7 @@ def add_netflix_watch_log(extension_id, video_id):
                              list_id=payload.get("list_id", None),
                              request_id=payload.get("request_id", None),
                              lolomo_id=payload.get("lolomo_id", None),
-                             ip=request.remote_addr,
+                             ip=annon_ip(request.remote_addr),
                              user=u,
                              single_page_session_id=payload.get("single_page_session_id", None))
 
@@ -434,7 +434,7 @@ def add_log_for_user(extension_id, content_id):
         logging.error("Unknown User " + extension_id + " tried to log data")
         return make_response("NO SUCH extension_id REGISTERED", 404)
     guard_log_consent(u)
-    s = StreamLog(content_id=content_id, ip=request.remote_addr, user=u)
+    s = StreamLog(content_id=content_id, ip=annon_ip(request.remote_addr), user=u)
     db.session.add(s)
     db.session.commit()
     return make_response("CREATED {} {}".format(s.content_id, u.extension_id), 201)
