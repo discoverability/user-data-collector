@@ -9,11 +9,6 @@ CONSENT_WATCHES = "consent-watches"
 CONSENT_LOGS = "consent-logs"
 
 
-class SetEncoder(json.JSONEncoder):
-    def default(self, obj):
-        if isinstance(obj, set):
-            return list(obj)
-        return json.JSONEncoder.default(self, obj)
 
 
 def guard_ip(ip):

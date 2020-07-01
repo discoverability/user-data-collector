@@ -1,8 +1,22 @@
 import json
-from flask import request
+from flask import request, make_response
 from app.main import app as api, db, cache
 from app.models import User, NetflixSuggestMetadata, NetflixWatchMetadata
-from app.routes import SetEncoder
+
+
+class SetEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, set):
+            return list(obj)
+        return json.JSONEncoder.default(self, obj)
+
+
+
+@api.route('/', defaults={'path': ''})
+@api.route('/<path:path>')
+def hello(path):
+
+    return make_response("hello " +path+" "+ str(request.path))
 
 
 @api.route("/api/users", methods=['GET'])

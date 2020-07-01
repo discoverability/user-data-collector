@@ -1,28 +1,33 @@
-version: '3'
-
+version: '3.3'
 services:
   reverse-proxy:
-    # The official v2 Traefik docker image
     image: traefik:v2.2
-    # Enables the web UI and tells Traefik to listen to docker
-    command: --api.insecure=true --providers.docker
-    ports:
-      # The HTTP port
-      - "80:80"
-      # The Web UI (enabled by --api.insecure=true)
-      - "8080:8080"
+    command: 
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.websecure.address=:443"
+      - "--accesslog=true"
+      - "--log.level=INFO"
     volumes:
-      # So that Traefik can listen to the Docker events
-      - /var/run/docker.sock:/var/run/docker.sock
+      - "/var/run/docker.sock:/var/run/docker.sock"
+      - "./letsencrypt:/letsencrypt"
   conso-api:
     image: discoverability/conso-api
+    depends_on:
+      - redis-cache
     labels:
-      - "traefik.http.routers.conso-api.rule=Host(`conso-api.docker.localhost`)"
+      - "traefik.enable=true"
+      - "traefik.http.routers.conso-api.rule=host(`experimental-api.vod-prime.space`) && path(`/dataviz-api/v1/{id:.*}`)"
+      - "traefik.http.routers.conso-api.entrypoints=websecure"
+      - "traefik.http.middlewares.conso-api-strip.stripprefix.prefixes=/dataviz-api/v1"
+      - "traefik.http.middlewares.conso-api-add-prefix.addprefix.prefix=/api"
+      - "traefik.http.routers.conso-api.middlewares=secured"
+      - "traefik.http.middlewares.secured.chain.middlewares=conso-api-strip,conso-api-add-prefix"
     environment:
-      - LOG_LEVEL="debug"
-      - APP_ENV="development"
-      - CACHE_REDIS_URL="redis://redis-cache:6379"
-      - SQLALCHEMY_DATABASE_URI="mysql://discoverability:aWuathigh8Ui@ts236797-001.dbaas.ovh.net:35824/discoverability"
+      - LOG_LEVEL=debug
+      - APP_ENV=production
+      - CACHE_REDIS_URL=redis://redis-cache:6379
+      - SQLALCHEMY_DATABASE_URI=mysql://discoverability:aWuathigh8Ui@ts236797-001.dbaas.ovh.net:35824/discoverability
+      - WORKERS_PER_CORE=1
   redis-cache:
     image: redis
-

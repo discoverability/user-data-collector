@@ -22,5 +22,5 @@ db = SQLAlchemy(app)
 migrate = Migrate(app, db)
 toolbar = DebugToolbarExtension(app)
 
-from app.routes import *
+#from app.routes import *
 from app.dataviz_api import *

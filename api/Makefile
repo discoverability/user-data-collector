@@ -16,7 +16,14 @@ run-prod:
 	cd app && APP_ENV=production FLASK_APP=app.main flask run 
 all: clean build
 
-clean: clean-model
+clean: 
+	rm -rf ./app.db
+	rm -f app/app.db
+	rm -rf ./app/migrations
+	rm -rf migrations
+	rm -rf ./app/app/migrations
+	rm -rf ./app/app/app.db
+
 
 build: build-api build-model
 
