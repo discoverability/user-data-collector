@@ -15,6 +15,7 @@ services:
     image: discoverability/conso-api
     depends_on:
       - redis-cache
+      - auth
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.conso-api.rule=host(`experimental-api.vod-prime.space`) && path(`/dataviz-api/v1/{id:.*}`)"
@@ -31,3 +32,31 @@ services:
       - WORKERS_PER_CORE=1
   redis-cache:
     image: redis
+  auth:
+    image: quay.io/keycloak/keycloak:10.0.1    
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.auth.rule=host(`auth.vod-prime.space`)"
+      - "traefik.http.routers.auth.entrypoints=websecure"
+      - "traefik.http.services.auth.loadbalancer.server.port=8080"
+    environment:
+      - JDBC_PARAMS=serverTimezone=UTC
+      - DB_VENDOR=mysql
+      - DB_ADDR=ts236797-001.dbaas.ovh.net
+      - DB_PORT=35824
+      - DB_USER=keycloak
+      - DB_PASSWORD=78JcVLQa7Uw9pRQ
+      - KEYCLOAK_USER=admin
+      - KEYCLOAK_PASSWORD=admin
+  poc-vue:
+    image: discoverability/poc-vue
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.poc-vue.entrypoints=websecure"
+      - "traefik.http.services.poc-vue.loadbalancer.server.port=8081"
+    expose:
+      - "8081"
+    environment:
+      - HOST=0.0.0.0
+      - PORT=8081
+

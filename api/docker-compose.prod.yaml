@@ -3,6 +3,7 @@ services:
   reverse-proxy:
     image: traefik:v2.2
     command: 
+      - "--api.insecure=true"
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
       - "--entrypoints.websecure.address=:443"
@@ -11,12 +12,39 @@ services:
       - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"
     ports:
       - "443:443"
+      - "8080:8080"
   conso-api:
     labels:
       - "traefik.http.routers.conso-api.rule=host(`experimental-api.vod-prime.space`) && path(`/dataviz-api/v1/{id:.*}`)"
       - "traefik.http.routers.conso-api.tls.certresolver=myresolver"
+      - "traefik.http.middlewares.forward-auth.forwardauth.address=https://auth.vod-prime.space"
+      - "traefik.http.middlewares.forward-auth.forwardauth.authResponseHeaders=X-Forwarded-User"
+      - "traefik.http.routers.conso-api.middlewares=forward-auth,secured"
+
     environment:
       - LOG_LEVEL=debug
       - APP_ENV=production
       - SQLALCHEMY_DATABASE_URI=mysql://discoverability:aWuathigh8Ui@ts236797-001.dbaas.ovh.net:35824/discoverability
       - WORKERS_PER_CORE=1
+  auth:
+    labels:
+      - "traefik.http.routers.auth.tls.certresolver=myresolver"
+      - "traefik.http.middlewares.corsheader.headers.accesscontrolallowmethods=GET,OPTIONS,PUT,POST"
+      - "traefik.http.middlewares.corsheader.headers.accesscontrolalloworiginlist=https://poc-vue.vod-prime.space/*,https://poc-vue.vod-prime.space"
+      - "traefik.http.middlewares.corsheader.headers.accesscontrolmaxage=100"
+      - "traefik.http.middlewares.corsheader.headers.addvaryheader=true"
+      - "traefik.http.middlewares.corsheader.headers.customresponseheaders.Access-Control-Allow-Origin=*"
+      - "traefik.http.middlewares.corsheader.headers.accessControlAllowCredentials=true"
+      - "traefik.http.routers.auth.middlewares=corsheader@docker"
+    environment:
+      - "PROXY_ADDRESS_FORWARDING=true"
+  poc-vue:
+    labels:
+      - "traefik.http.routers.poc-vue.rule=host(`poc-vue.vod-prime.space`)"
+      - "traefik.http.routers.poc-vue.tls.certresolver=myresolver"
+      - "traefik.http.routers.poc-vue.entrypoints=websecure"
+      - "traefik.http.middlewares.poc-vue-cors.headers.customresponseheaders.Access-Control-Allow-Origin=*"
+      - "traefik.http.routers.poc-vue.middlewares=poc-vue-cors@docker"
+
+
+
