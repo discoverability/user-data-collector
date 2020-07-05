@@ -11,7 +11,7 @@ services:
       - "8080:8080"
   conso-api:
     labels:
-      - "traefik.http.routers.conso-api.rule=host(`conso-api.localhost`) && path(`/dataviz-api/v1/{id:.*}`)"
+      - "traefik.http.routers.conso-api.rule=host(`conso-api.localhost`)"
     environment:
       - LOG_LEVEL=debug
       - APP_ENV=dev
