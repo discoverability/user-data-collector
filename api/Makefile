@@ -31,7 +31,8 @@ docker:
 	docker build . -t discoverability/conso-api 
 docker-run:
 	docker run -e LOG_LEVEL="debug" -p 80:80 discoverability/conso-api 
-
+compose-run:
+	docker-compose -f docker-compose.yaml -f docker-compose.dev.yaml up -d
 docker-push:
 	docker push discoverability/conso-api
 
