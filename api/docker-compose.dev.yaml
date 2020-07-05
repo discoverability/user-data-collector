@@ -1,7 +1,8 @@
 version: '3.3'
 services:
   reverse-proxy:
-    command: 
+    command:
+      - "--log.level=DEBUG"
       - "--api.insecure=true"
       - "--providers.docker.exposedbydefault=false"
       - "--entrypoints.websecure.address=:80"

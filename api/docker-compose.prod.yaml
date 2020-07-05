@@ -2,30 +2,26 @@ version: '3.3'
 services:
   reverse-proxy:
     image: traefik:v2.2
-    command: 
+    command:
       - "--api.insecure=true"
+      - "--accesslog=true"
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
       - "--entrypoints.websecure.address=:443"
       - "--certificatesresolvers.myresolver.acme.tlschallenge=true"
       - "--certificatesresolvers.myresolver.acme.email=contact@vod-prime.space"
       - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"
+      - "--log.level=DEBUG"
     ports:
       - "443:443"
       - "8080:8080"
   conso-api:
-    labels:
-      - "traefik.http.routers.conso-api.rule=host(`experimental-api.vod-prime.space`) && path(`/dataviz-api/v1/{id:.*}`)"
-      - "traefik.http.routers.conso-api.tls.certresolver=myresolver"
-      - "traefik.http.middlewares.forward-auth.forwardauth.address=https://auth.vod-prime.space"
-      - "traefik.http.middlewares.forward-auth.forwardauth.authResponseHeaders=X-Forwarded-User"
-      - "traefik.http.routers.conso-api.middlewares=forward-auth,secured"
-
     environment:
       - LOG_LEVEL=debug
       - APP_ENV=production
       - SQLALCHEMY_DATABASE_URI=mysql://discoverability:aWuathigh8Ui@ts236797-001.dbaas.ovh.net:35824/discoverability
       - WORKERS_PER_CORE=1
+      - CACHE_REDIS_URL=redis://redis-cache:6379/0
   auth:
     labels:
       - "traefik.http.routers.auth.tls.certresolver=myresolver"
@@ -45,6 +41,20 @@ services:
       - "traefik.http.routers.poc-vue.entrypoints=websecure"
       - "traefik.http.middlewares.poc-vue-cors.headers.customresponseheaders.Access-Control-Allow-Origin=*"
       - "traefik.http.routers.poc-vue.middlewares=poc-vue-cors@docker"
-
+  auth-proxy:
+    image: keycloak/keycloak-gatekeeper
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.auth-proxy.tls.certresolver=myresolver"
+      - "traefik.http.routers.auth-proxy.rule=host(`experimental-api.vod-prime.space`)"
+      - "traefik.http.routers.auth-proxy.entrypoints=websecure"
+      - "traefik.http.services.auth-proxy.loadbalancer.server.port=3000"
+    expose:
+      - "3000"
+    volumes:
+      - ./keycloak-gatekeeper.conf:/etc/keycloak-gatekeeper.conf
+    entrypoint:
+      - /opt/keycloak-gatekeeper
+      - --config=/etc/keycloak-gatekeeper.conf
 
 

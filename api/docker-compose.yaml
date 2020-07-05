@@ -2,7 +2,7 @@ version: '3.3'
 services:
   reverse-proxy:
     image: traefik:v2.2
-    command: 
+    command:
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
       - "--entrypoints.websecure.address=:443"
@@ -16,20 +16,6 @@ services:
     depends_on:
       - redis-cache
       - auth
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.conso-api.rule=host(`experimental-api.vod-prime.space`) && path(`/dataviz-api/v1/{id:.*}`)"
-      - "traefik.http.routers.conso-api.entrypoints=websecure"
-      - "traefik.http.middlewares.conso-api-strip.stripprefix.prefixes=/dataviz-api/v1"
-      - "traefik.http.middlewares.conso-api-add-prefix.addprefix.prefix=/api"
-      - "traefik.http.routers.conso-api.middlewares=secured"
-      - "traefik.http.middlewares.secured.chain.middlewares=conso-api-strip,conso-api-add-prefix"
-    environment:
-      - LOG_LEVEL=debug
-      - APP_ENV=production
-      - CACHE_REDIS_URL=redis://redis-cache:6379
-      - SQLALCHEMY_DATABASE_URI=mysql://discoverability:aWuathigh8Ui@ts236797-001.dbaas.ovh.net:35824/discoverability
-      - WORKERS_PER_CORE=1
   redis-cache:
     image: redis
   auth:
