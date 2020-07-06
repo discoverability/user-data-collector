@@ -3,14 +3,18 @@ services:
   reverse-proxy:
     image: traefik:v2.2
     command:
-      - "--accesslog=true"
+            #- "--api.insecure=true"
+        #      - "--accesslog=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
       - "--entrypoints.websecure.address=:443"
       - "--certificatesresolvers.myresolver.acme.tlschallenge=true"
       - "--certificatesresolvers.myresolver.acme.email=contact@vod-prime.space"
       - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"
-      - "--log.level=INFO"
+        #      - "--log.level=DEBUG"
     ports:
       - "443:443"
+      - "8080:8080"
     volumes:
       - "./letsencrypt:/letsencrypt"
   conso-api:
@@ -61,7 +65,6 @@ services:
       - "traefik.http.routers.poc-vue.entrypoints=websecure"
       - "traefik.http.middlewares.poc-vue-cors.headers.customresponseheaders.Access-Control-Allow-Origin=*"
       - "traefik.http.routers.poc-vue.middlewares=poc-vue-cors@docker"
-      - "traefik.http.routers.poc-vue.entrypoints=websecure"
       - "traefik.http.services.poc-vue.loadbalancer.server.port=8081"
     expose:
       - "8081"
