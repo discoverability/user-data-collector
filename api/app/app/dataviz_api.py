@@ -11,13 +11,20 @@ class SetEncoder(json.JSONEncoder):
         return json.JSONEncoder.default(self, obj)
 
 
+# @api.route('/', defaults={'path': ''})
+# @api.route('/<path:path>')
+# def hello(path):
+#    return make_response("hello " +path+" "+ str(request.path))
 
-@api.route('/', defaults={'path': ''})
-@api.route('/<path:path>')
-def hello(path):
 
-    return make_response("hello " +path+" "+ str(request.path))
-
+@api.route("/api", methods=['GET'])
+@cache.cached(timeout=3600)
+def api_root():
+    watch_link = {}
+    watch_link["name"] = "users"
+    watch_link["href"] = "/api/users"
+    links = {"links": [watch_link]}
+    return json.dumps(links, cls=SetEncoder), 200, {'Content-Type': 'application/json'}
 
 @api.route("/api/users", methods=['GET'])
 @cache.cached(timeout=3600)
@@ -41,11 +48,11 @@ def get_dataviz_users():
 
                 link_data = {}
                 link_data["name"] = "thumbnails"
-                link_data["href"] = "/dataviz-api/v1/thumbnails/%s/%s" % (u.extension_id, l)
+                link_data["href"] = "/api/thumbnails/%s/%s" % (u.extension_id, l)
 
                 watch_link = {}
                 watch_link["name"] = "watches"
-                watch_link["href"] = "/dataviz-api/v1/thumbnails/%s/%s/watches" % (u.extension_id, l)
+                watch_link["href"] = "/api/thumbnails/%s/%s/watches" % (u.extension_id, l)
                 session_data["links"] = [link_data, watch_link]
                 user_data["sessions"].append(session_data)
         if len(user_data["sessions"]) > 0:
@@ -119,7 +126,7 @@ def get_user_watch_for_session(user_id, session_id):
 
                 {
                     "name": "thumbnails",
-                    "href":  "/dataviz-api/v1/thumbnails/%s/%s" % (user_id, session_id)
+                    "href": "/api/thumbnails/%s/%s" % (user_id, session_id)
                 },
                 {
                     "name": "user",
