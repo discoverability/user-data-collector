@@ -1,5 +1,6 @@
 import os
 import json
+from sqlalchemy import func
 from flask import request, make_response
 from app.main import app as api, db, cache
 from app.models import User, NetflixSuggestMetadata, NetflixWatchMetadata, Lolomo
@@ -21,7 +22,6 @@ class SetEncoder(json.JSONEncoder):
 
 
 @api.route("/api", methods=['GET'])
-@api.route("/api/", methods=['GET'])
 @cache.cached(timeout=3600)
 def api_root():
     watch_link = {}
@@ -51,7 +51,7 @@ def get_dataviz_users():
 
                 link_data = {}
                 link_data["name"] = "thumbnails"
-                link_data["href"] = API_ROOT + "/api/%s/thumbnails/%s" % (u.extension_id, l)
+                link_data["href"] = API_ROOT + "/api/user/%s/thumbnails/%s" % (u.extension_id, l)
 
                 watch_link = {}
                 watch_link["name"] = "watches"
@@ -65,7 +65,7 @@ def get_dataviz_users():
 
 
 @api.route("/api/user/<user_id>/thumbnails/<session_id>", methods=['GET'])
-@cache.cached(timeout=3600)
+@cache.cached(timeout=10)
 def get_thumbnails_data(user_id, session_id):
     data = {}
 
@@ -95,8 +95,7 @@ def get_thumbnails_data(user_id, session_id):
 
 
 @api.route("/api/user/<user_id>/thumbnails", methods=['GET'])
-@api.route("/api/user/<user_id>/thumbnails/", methods=['GET'])
-@cache.cached(timeout=3600)
+@cache.cached(timeout=10)
 def get_user_thumbnails(user_id):
     thumbnails = db.session.query(NetflixSuggestMetadata).join(User).filter(User.extension_id == user_id).filter(
         User.id == NetflixSuggestMetadata.user_id).all()
@@ -119,9 +118,8 @@ def get_user_thumbnails(user_id):
     return json.dumps(t), 200, {'Content-Type': 'application/json'}
 
 
-@api.route("/api/user/<user_id>/watches/", methods=['GET'])
 @api.route("/api/user/<user_id>/watches", methods=['GET'])
-@cache.cached(timeout=3600)
+@cache.cached(timeout=10)
 def get_user_watch(user_id):
     watches = db.session.query(NetflixWatchMetadata).join(User).filter(User.extension_id == user_id).filter(
         User.id == NetflixWatchMetadata.user_id).all()
@@ -142,12 +140,12 @@ def get_user_watch(user_id):
             }
         ]} for watch in watches}
 
-    add_user_links(w)
+    add_user_links(w, user_id)
 
     return json.dumps(w), 200, {'Content-Type': 'application/json'}
 
 
-def add_user_links(w):
+def add_user_links(w, user_id):
     w["links"] = [
         {
             "name": "user",
@@ -165,7 +163,7 @@ def add_user_links(w):
 
 
 @api.route("/api/user/<user_id>/watches/<session_id>", methods=['GET'])
-@cache.cached(timeout=3600)
+@cache.cached(timeout=10)
 def get_user_watch_for_session(user_id, session_id):
     suggests = (db.session.query(User, NetflixSuggestMetadata).order_by(NetflixSuggestMetadata.timestamp)
                 .filter(User.id == NetflixSuggestMetadata.user_id)
@@ -201,34 +199,36 @@ def get_user_watch_for_session(user_id, session_id):
 
 
 def get_watches_data(session_id, user_id, watches):
-    return {"watches": {watch.video_id: {"timestamp": watch.timestamp.timestamp()} for user, watch in watches},
-            "links": [
+    return {
+        "watches": {watch.video_id: {"timestamp": watch.timestamp.timestamp(), "timestamp_human": str(watch.timestamp)}
+                    for user, watch in watches},
+        "links": [
 
-                {
-                    "name": "thumbnails",
-                    "href": API_ROOT + f"/api/user/{user_id}/thumbnails/{session_id}"
-                },
-                {
-                    "name": "user",
-                    "href": API_ROOT + f"/api/user/{user_id}"
-                },
-                {
-                    "name": "self",
-                    "href": API_ROOT + f"/api/user/{user_id}/watches/{session_id}"
-                },
-                {
-                    "name": "user_gui",
-                    "href": API_ROOT + "/" + "%s" % (user_id)
-                },
-                {
-                    "name": "watches_gui",
-                    "href": API_ROOT + "/" + "%s/netflix/watches" % (user_id)
-                }
-            ]}
+            {
+                "name": "thumbnails",
+                "href": API_ROOT + f"/api/user/{user_id}/thumbnails/{session_id}"
+            },
+            {
+                "name": "user",
+                "href": API_ROOT + f"/api/user/{user_id}"
+            },
+            {
+                "name": "self",
+                "href": API_ROOT + f"/api/user/{user_id}/watches/{session_id}"
+            },
+            {
+                "name": "user_gui",
+                "href": API_ROOT + "/" + "%s" % (user_id)
+            },
+            {
+                "name": "watches_gui",
+                "href": API_ROOT + "/" + "%s/netflix/watches" % (user_id)
+            }
+        ]}
 
 
 @api.route("/api/user/<user_id>", methods=['GET'])
-@cache.cached(timeout=3600)
+@cache.cached(timeout=10)
 def get_user(user_id):
     user = db.session.query(User).filter(User.extension_id == user_id).first()
 
@@ -237,20 +237,21 @@ def get_user(user_id):
 
 
 @api.route("/api/user/<user_id>/sessions", methods=['GET'])
-@cache.cached(timeout=3600)
+@cache.cached(timeout=10)
 def get_session_for_user(user_id):
-    lolomos = db.session.query(Lolomo).join(User).filter(User.id == Lolomo.user_id).filter(
+    lolomos = db.session.query(Lolomo.single_page_session_id, func.max(Lolomo.timestamp)).join(User).filter(
+        User.id == Lolomo.user_id).filter(
         User.extension_id == user_id).group_by(Lolomo.single_page_session_id).all()
 
-    res = {lolomo.single_page_session_id: {"creation_date": lolomo.timestamp.timestamp(),
-                                           "creation_date_human": str(lolomo.timestamp), "links": [
+    res = {lolomo[0]: {"creation_date": lolomo[1].timestamp(),
+                       "creation_date_human": str(lolomo[1]), "links": [
             {
                 "name": "thumbnails",
-                "href": API_ROOT + f"/api/user/{user_id}/thumbnails/{lolomo.single_page_session_id}"
+                "href": API_ROOT + f"/api/user/{user_id}/thumbnails/{lolomo[0]}"
             },
             {
                 "name": "watches",
-                "href": API_ROOT + f"/api/user/{user_id}/watches/{lolomo.single_page_session_id}"
+                "href": API_ROOT + f"/api/user/{user_id}/watches/{lolomo[0]}"
             }
         ]} for lolomo in lolomos}
     return json.dumps(res), 200, {'Content-Type': 'application/json'}
