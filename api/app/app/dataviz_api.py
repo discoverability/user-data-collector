@@ -1,9 +1,52 @@
 import os
 import json
+import struct, ctypes
 from sqlalchemy import func
-from flask import request, make_response
+from flask import request, make_response, abort
 from app.main import app as api, db, cache
 from app.models import User, NetflixSuggestMetadata, NetflixWatchMetadata, Lolomo
+
+from functools import wraps
+
+is_callable = lambda o: hasattr(o, '__call__')
+
+
+def query_args(*names, **values):
+    user_args = ([{"key": name} for name in names] +
+                 [{"key": key, "value": value}
+                  for (key, value) in values.items()])
+
+    def decorator(f):
+        @wraps(f)
+        def wrapper(*args, **kwargs):
+            final_args, final_kwargs = args_from_request(user_args, args, kwargs)
+            return f(*final_args, **final_kwargs)
+
+        return wrapper
+
+    return decorator if len(names) < 1 or not is_callable(names[0]) else decorator(names[0])
+
+
+def args_from_request(to_extract, provided_args, provided_kwargs):
+    # Ignoring provided_* here - ideally, you'd merge them
+    # in whatever way makes the most sense for your application
+    results = {}
+    for arg in to_extract:
+
+        extracted_value = request.args.get(arg["key"])
+        try:
+            if is_callable(arg["value"]):
+
+                results[arg["key"]] = arg["value"](extracted_value)
+            else:
+                if extracted_value is None:
+                    results[arg["key"]] = arg["value"]
+                else:
+                    results[arg["key"]] = type(arg["value"])(extracted_value)
+        except ValueError:
+            return abort(404, f" {arg['key']} argument should be {type(arg['value']).__name__}")
+    return provided_args, results
+
 
 API_ROOT = os.getenv("API_ROOT", "")
 
@@ -25,10 +68,84 @@ class SetEncoder(json.JSONEncoder):
 @cache.cached(timeout=3600)
 def api_root():
     watch_link = {}
-    watch_link["name"] = "users"
+    watch_link["rel"] = "users"
     watch_link["href"] = API_ROOT + "/api/users"
-    links = {"links": [watch_link]}
+    links = {"links": [watch_link, {"rel": "latest-watches",
+                                    "href": API_ROOT + "/api/watches/latest"},
+                       {"rel": "latest-thumbnails",
+                        "href": API_ROOT + "/api/thumbnails/latest"},
+                       {"rel": "latest-users",
+                        "href": API_ROOT + "/api/users/latest"}
+                       ]}
     return json.dumps(links, cls=SetEncoder), 200, {'Content-Type': 'application/json'}
+
+
+@api.route("/api/users/latest", methods=['GET'])
+@query_args(limit=20)
+def get_latest_users(limit):
+    users = db.session.query(User).order_by(User.creation_date.desc()).limit(limit)
+
+    res = {
+        user.extension_id: {
+            "id": user.extension_id,
+            "creation_date": user.creation_date.timestamp(),
+            "creation_date_human": str(user.creation_date),
+            "log_count": len(user.suggestions),
+            "watch_count": len(user.watches),
+            "links": [
+                {"rel": "self", "href": API_ROOT + f"/api/user/{user.extension_id}"},
+                {"rel": "watches", "href": API_ROOT + f"/api/user/{user.extension_id}/watches"},
+                {"rel": "sessions", "href": API_ROOT + f"/api/user/{user.extension_id}/sessions"},
+                {"rel": "thumbnails", "href": API_ROOT + f"/api/user/{user.extension_id}/thumbnails"}
+            ]}
+
+        for user in users}
+    return json.dumps(res, cls=SetEncoder), 200, {'Content-Type': 'application/json'}
+
+
+@api.route("/api/thumbnails/latest", methods=['GET'])
+@query_args(limit=20)
+def get_latest_logs(limit):
+    logs = db.session.query(NetflixSuggestMetadata).order_by(NetflixSuggestMetadata.timestamp.desc()).limit(limit)
+
+    res = [
+        {
+            "user": log.user.extension_id,
+            "pseudo_ip": log.ip,
+            "timestamp": log.timestamp.timestamp(),
+            "timestamp_human": str(log.timestamp),
+            "video_id": log.video_id,
+            "track_id": log.video_id,
+            "links": [
+                {"rel": "session",
+                 "href": API_ROOT + f"/api/user/{log.user.extension_id}/session/{log.single_page_session_id}"},
+                {"rel": "user", "href": API_ROOT + f"/api/user/{log.user.extension_id}"}
+            ]
+        } for
+        log in logs]
+    return json.dumps(res, cls=SetEncoder), 200, {'Content-Type': 'application/json'}
+
+
+@api.route("/api/watches/latest", methods=['GET'])
+@query_args(limit=20)
+def get_latest_watches(limit):
+    watches = db.session.query(NetflixWatchMetadata).order_by(NetflixWatchMetadata.timestamp.desc()).limit(limit)
+
+    res = [
+        {"video_id": w.video_id,
+         "timestamp": w.timestamp.timestamp(),
+         "timestamp_human": str(w.timestamp),
+         "track_id": w.track_id,
+         "pseudo_ip": w.ip,
+         "links": [
+
+             {"rel": "session",
+              "href": API_ROOT + f"/api/user/{w.user.extension_id}/session/{w.single_page_session_id}"},
+             {"rel": "user", "href": API_ROOT + f"/api/user/{w.user.extension_id}"}
+         ]
+         } for
+        w in watches]
+    return json.dumps(res, cls=SetEncoder), 200, {'Content-Type': 'application/json'}
 
 
 @api.route("/api/users", methods=['GET'])
@@ -107,11 +224,11 @@ def get_user_thumbnails(user_id):
         "links": [
 
             {
-                "name": "thumbnails",
+                "rel": "thumbnails",
                 "href": API_ROOT + f"/api/user/{user_id}/thumbnails/{thumbnail.single_page_session_id}"
             },
             {
-                "name": "watches",
+                "rel": "watches",
                 "href": API_ROOT + f"/api/user/{user_id}/watches/{thumbnail.single_page_session_id}"
             }
         ]} for thumbnail in thumbnails}
@@ -131,11 +248,11 @@ def get_user_watch(user_id):
         "links": [
 
             {
-                "name": "thumbnails",
+                "rel": "thumbnails",
                 "href": API_ROOT + f"/api/user/{user_id}/thumbnails/{watch.single_page_session_id}"
             },
             {
-                "name": "watches",
+                "rel": "watches",
                 "href": API_ROOT + f"/api/user/{user_id}/watches/{watch.single_page_session_id}"
             }
         ]} for watch in watches}
@@ -148,15 +265,15 @@ def get_user_watch(user_id):
 def add_user_links(w, user_id):
     w["links"] = [
         {
-            "name": "user",
+            "rel": "user",
             "href": API_ROOT + f"/api/user/{user_id}"
         },
         {
-            "name": "thumbnails",
+            "rel": "thumbnails",
             "href": API_ROOT + f"/api/user/{user_id}/thumbnails"
         },
         {
-            "name": "self",
+            "rel": "self",
             "href": API_ROOT + f"/api/user/{user_id}/watches"
         }
     ]
@@ -205,23 +322,23 @@ def get_watches_data(session_id, user_id, watches):
         "links": [
 
             {
-                "name": "thumbnails",
+                "rel": "thumbnails",
                 "href": API_ROOT + f"/api/user/{user_id}/thumbnails/{session_id}"
             },
             {
-                "name": "user",
+                "rel": "user",
                 "href": API_ROOT + f"/api/user/{user_id}"
             },
             {
-                "name": "self",
+                "rel": "self",
                 "href": API_ROOT + f"/api/user/{user_id}/watches/{session_id}"
             },
             {
-                "name": "user_gui",
+                "rel": "user_gui",
                 "href": API_ROOT + "/" + "%s" % (user_id)
             },
             {
-                "name": "watches_gui",
+                "rel": "watches_gui",
                 "href": API_ROOT + "/" + "%s/netflix/watches" % (user_id)
             }
         ]}
@@ -246,11 +363,11 @@ def get_session_for_user(user_id):
     res = {lolomo[0]: {"creation_date": lolomo[1].timestamp(),
                        "creation_date_human": str(lolomo[1]), "links": [
             {
-                "name": "thumbnails",
+                "rel": "thumbnails",
                 "href": API_ROOT + f"/api/user/{user_id}/thumbnails/{lolomo[0]}"
             },
             {
-                "name": "watches",
+                "rel": "watches",
                 "href": API_ROOT + f"/api/user/{user_id}/watches/{lolomo[0]}"
             }
         ]} for lolomo in lolomos}
@@ -266,19 +383,19 @@ def get_user_links(user_id):
     return [
 
         {
-            "name": "sessions",
+            "rel": "sessions",
             "href": API_ROOT + f"/api/user/{user_id}/sessions"
         },
         {
-            "name": "self",
+            "rel": "self",
             "href": API_ROOT + f"/api/user/{user_id}"
         },
         {
-            "name": "watches",
+            "rel": "watches",
             "href": API_ROOT + f"/api/user/{user_id}/watches"
         },
         {
-            "name": "thumbnails",
+            "rel": "thumbnails",
             "href": API_ROOT + f"/api/user/{user_id}/thumbnails"
         }
     ]
