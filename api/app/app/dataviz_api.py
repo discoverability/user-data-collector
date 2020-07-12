@@ -181,6 +181,15 @@ def get_dataviz_users():
     return json.dumps(res, cls=SetEncoder), 200, {'Content-Type': 'application/json'}
 
 
+@api.route("/api/user/<user_id>/session/<session_id>", methods=['GET'])
+def get_session_for_user(user_id, session_id):
+    res = {
+        "links": get_sessions_links(user_id, session_id)
+    }
+
+    return json.dumps(res, cls=SetEncoder), 200, {'Content-Type': 'application/json'}
+
+
 @api.route("/api/user/<user_id>/thumbnails/<session_id>", methods=['GET'])
 @cache.cached(timeout=10)
 def get_thumbnails_data(user_id, session_id):
@@ -207,7 +216,7 @@ def get_thumbnails_data(user_id, session_id):
         item["timestamp"] = suggest.timestamp.timestamp()
         item["timestamp_human"] = str(suggest.timestamp)
         data[suggest.video_id] = item
-    data["links"] = get_user_links(user_id)
+    data["links"] = get_user_links(user_id) + get_sessions_links(user_id, session_id)
     return json.dumps(data), 200, {'Content-Type': 'application/json'}
 
 
@@ -221,17 +230,7 @@ def get_user_thumbnails(user_id):
         "request_id": thumbnail.request_id,
         "timestamp": thumbnail.timestamp.timestamp(),
         "track_id": thumbnail.track_id,
-        "links": [
-
-            {
-                "rel": "thumbnails",
-                "href": API_ROOT + f"/api/user/{user_id}/thumbnails/{thumbnail.single_page_session_id}"
-            },
-            {
-                "rel": "watches",
-                "href": API_ROOT + f"/api/user/{user_id}/watches/{thumbnail.single_page_session_id}"
-            }
-        ]} for thumbnail in thumbnails}
+        "links": get_sessions_links(user_id, thumbnail.single_page_session_id)} for thumbnail in thumbnails}
     return json.dumps(t), 200, {'Content-Type': 'application/json'}
 
 
@@ -245,38 +244,11 @@ def get_user_watch(user_id):
         "request_id": watch.request_id,
         "timestamp": watch.timestamp.timestamp(),
         "track_id": watch.track_id,
-        "links": [
+        "links": get_sessions_links(user_id, watch.single_page_session_id)} for watch in watches}
 
-            {
-                "rel": "thumbnails",
-                "href": API_ROOT + f"/api/user/{user_id}/thumbnails/{watch.single_page_session_id}"
-            },
-            {
-                "rel": "watches",
-                "href": API_ROOT + f"/api/user/{user_id}/watches/{watch.single_page_session_id}"
-            }
-        ]} for watch in watches}
-
-    add_user_links(w, user_id)
+    w["links"] = get_user_links(user_id)
 
     return json.dumps(w), 200, {'Content-Type': 'application/json'}
-
-
-def add_user_links(w, user_id):
-    w["links"] = [
-        {
-            "rel": "user",
-            "href": API_ROOT + f"/api/user/{user_id}"
-        },
-        {
-            "rel": "thumbnails",
-            "href": API_ROOT + f"/api/user/{user_id}/thumbnails"
-        },
-        {
-            "rel": "self",
-            "href": API_ROOT + f"/api/user/{user_id}/watches"
-        }
-    ]
 
 
 @api.route("/api/user/<user_id>/watches/<session_id>", methods=['GET'])
@@ -355,7 +327,7 @@ def get_user(user_id):
 
 @api.route("/api/user/<user_id>/sessions", methods=['GET'])
 @cache.cached(timeout=10)
-def get_session_for_user(user_id):
+def get_sessions_for_user(user_id):
     lolomos = db.session.query(Lolomo.single_page_session_id, func.max(Lolomo.timestamp)).join(User).filter(
         User.id == Lolomo.user_id).filter(
         User.extension_id == user_id).group_by(Lolomo.single_page_session_id).all()
@@ -379,11 +351,31 @@ def get_user_data(user):
                      "user_id": user.extension_id}, "links": get_user_links(user.extension_id)}
 
 
+def get_sessions_links(user_id, session_id):
+    return [
+        {
+            "rel": "session",
+            "href": API_ROOT + f"/api/user/{user_id}/session/{session_id}"
+        }
+        ,
+        {
+            "rel": "watches",
+            "href": API_ROOT + f"/api/user/{user_id}/watches/{session_id}"
+        }
+        ,
+        {
+            "rel": "thumbnails",
+            "href": API_ROOT + f"/api/user/{user_id}/thumbnails/{session_id}"
+        }
+
+    ]
+
+
 def get_user_links(user_id):
     return [
 
         {
-            "rel": "sessions",
+            "rel": "all-sessions",
             "href": API_ROOT + f"/api/user/{user_id}/sessions"
         },
         {
@@ -391,11 +383,11 @@ def get_user_links(user_id):
             "href": API_ROOT + f"/api/user/{user_id}"
         },
         {
-            "rel": "watches",
+            "rel": "all-watches",
             "href": API_ROOT + f"/api/user/{user_id}/watches"
         },
         {
-            "rel": "thumbnails",
+            "rel": "all-thumbnails",
             "href": API_ROOT + f"/api/user/{user_id}/thumbnails"
         }
     ]
