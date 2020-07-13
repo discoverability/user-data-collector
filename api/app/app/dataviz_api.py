@@ -115,11 +115,13 @@ def get_latest_logs(limit):
             "timestamp": log.timestamp.timestamp(),
             "timestamp_human": str(log.timestamp),
             "video_id": log.video_id,
-            "track_id": log.video_id,
+            "track_id": log.track_id,
+
             "links": [
                 {"rel": "session",
                  "href": API_ROOT + f"/api/user/{log.user.extension_id}/session/{log.single_page_session_id}"},
-                {"rel": "user", "href": API_ROOT + f"/api/user/{log.user.extension_id}"}
+                {"rel": "user", "href": API_ROOT + f"/api/user/{log.user.extension_id}"},
+                {"rel": "content", "href": f"https://platform-api.vod-prime.space/api/netflix/content/{log.video_id}", }
             ]
         } for
         log in logs]
@@ -216,6 +218,8 @@ def get_thumbnails_data(user_id, session_id):
         item["track_id"] = track_id
         item["timestamp"] = timestamp.timestamp()
         item["timestamp_human"] = str(timestamp)
+        item["links"] = [
+            {"rel": "content", "href": f"https://platform-api.vod-prime.space/api/netflix/content/{video_id}"}]
         data["thumbnails"].append(item)
     data["links"] = get_user_links(user_id) + get_sessions_links(user_id, session_id)
     return json.dumps(data), 200, {'Content-Type': 'application/json'}
