@@ -194,28 +194,29 @@ def get_session_for_user(user_id, session_id):
 @cache.cached(timeout=10)
 def get_thumbnails_data(user_id, session_id):
     data = {}
+    data["thumbnails"] = []
 
-    suggests = (db.session.query(NetflixSuggestMetadata).join(User).order_by(NetflixSuggestMetadata.timestamp)
-                .filter(User.id == NetflixSuggestMetadata.user_id)
-                .filter(User.extension_id == user_id)
-                .filter(NetflixWatchMetadata.single_page_session_id == session_id)
-                .order_by(NetflixSuggestMetadata.timestamp, NetflixSuggestMetadata.row, NetflixSuggestMetadata.rank)
-                .all())
+    suggests = (
+        db.session.query(NetflixSuggestMetadata.row, NetflixSuggestMetadata.rank, NetflixSuggestMetadata.video_id,
+                         func.max(NetflixSuggestMetadata.track_id), func.max(NetflixSuggestMetadata.timestamp),
+                         func.max(NetflixSuggestMetadata.user_id)).join(User)
+            .filter(User.id == NetflixSuggestMetadata.user_id)
+            .filter(User.extension_id == user_id)
+            .filter(NetflixWatchMetadata.single_page_session_id == session_id)
+            .order_by(NetflixSuggestMetadata.row, NetflixSuggestMetadata.rank)
+            .group_by(NetflixSuggestMetadata.row, NetflixSuggestMetadata.rank, NetflixSuggestMetadata.video_id)
+            .all())
 
-    suggests = {"%s/%03d/%03d" % (s.timestamp.strftime("%m%d%H%M"), s.row, s.rank): s for s in suggests}
-
-    # listings = [list(g) for  g in groupby(suggests, attrgetter('timestamp','row','rank'))]
-
-    res = "<html><body>#timestamp;ip;content_id;location;row;rank;app_view<br>"
-    for k_suggest in sorted(suggests):
-        suggest = suggests[k_suggest]
+    for row, rank, video_id, track_id, timestamp, _ in suggests:
         item = {}
 
-        item["row"] = suggest.row
-        item["col"] = suggest.rank
-        item["timestamp"] = suggest.timestamp.timestamp()
-        item["timestamp_human"] = str(suggest.timestamp)
-        data[suggest.video_id] = item
+        item["row"] = row
+        item["col"] = rank
+        item["video_id"] = video_id
+        item["track_id"] = track_id
+        item["timestamp"] = timestamp.timestamp()
+        item["timestamp_human"] = str(timestamp)
+        data["thumbnails"].append(item)
     data["links"] = get_user_links(user_id) + get_sessions_links(user_id, session_id)
     return json.dumps(data), 200, {'Content-Type': 'application/json'}
 
@@ -240,11 +241,14 @@ def get_user_watch(user_id):
     watches = db.session.query(NetflixWatchMetadata).join(User).filter(User.extension_id == user_id).filter(
         User.id == NetflixWatchMetadata.user_id).all()
 
-    w = {watch.video_id: {
+    w = {}
+    w["watches"] = [{
+        "video_id": watch.video_id,
+        "track_id": watch.track_id,
         "request_id": watch.request_id,
         "timestamp": watch.timestamp.timestamp(),
         "track_id": watch.track_id,
-        "links": get_sessions_links(user_id, watch.single_page_session_id)} for watch in watches}
+        "links": get_sessions_links(user_id, watch.single_page_session_id)} for watch in watches]
 
     w["links"] = get_user_links(user_id)
 
