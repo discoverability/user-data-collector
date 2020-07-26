@@ -22,7 +22,11 @@ def get_dataviz_users():
                 visited_sessions.append(l)
                 session_data = {}
                 session_data["session_id"] = l
-                creation_date = next((ll.timestamp for ll in u.lolomos if ll.single_page_session_id == l))
+                creation_date = [ll.timestamp for ll in u.lolomos if ll.single_page_session_id == l]
+                if len(creation_date)==0:
+                    continue
+                else:
+                    creation_date=creation_date[0]
                 session_data["creation_date"] = creation_date.timestamp()
 
                 link_data = {}
