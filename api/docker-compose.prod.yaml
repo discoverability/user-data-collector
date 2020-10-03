@@ -24,6 +24,7 @@ services:
       - SQLALCHEMY_DATABASE_URI=mysql://discoverability:aWuathigh8Ui@ts236797-001.dbaas.ovh.net:35824/discoverability
       - WORKERS_PER_CORE=1
       - CACHE_REDIS_URL=redis://redis-cache:6379/0
+      - API_ROOT=https://experimental-api.vod-prime.space
     labels:
       - "traefik.http.services.conso-api.loadbalancer.server.port=80"
     depends_on:
