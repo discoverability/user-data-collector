@@ -10,7 +10,7 @@ bootstrap:
 init:
 	cd app &&	FLASK_APP=app.main flask db init && 	FLASK_APP=app.main flask db migrate &&	FLASK_APP=app.main flask db upgrade 
 run: 
-	cd app && 	FLASK_APP=app.main flask db migrate && FLASK_APP=app.main flask db upgrade &&	FLASK_APP=app.main flask run 
+	cd app && 	FLASK_APP=app.main flask db migrate && FLASK_APP=app.main flask db upgrade &&	LOG_LEVEL=debug FLASK_APP=app.main flask run 
 
 run-prod:
 	cd app && APP_ENV=production FLASK_APP=app.main flask run 

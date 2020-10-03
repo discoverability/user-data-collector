@@ -12,9 +12,10 @@ CONSENT_LOGS = "consent-logs"
 
 
 def guard_ip(ip):
-    ip = db.session.query(AuthorizedIP).filter(AuthorizedIP.ip == ip).first()
-    if ip is None:
-        abort(403, "Your IP is not authorized to use this feature. Contact Admin")
+    #ip = db.session.query(AuthorizedIP).filter(AuthorizedIP.ip == ip).first()
+    #if ip is None:
+    #    abort(403, "Your IP is not authorized to use this feature. Contact Admin")
+    pass
 
 
 def guard_log_consent(u):
@@ -185,7 +186,7 @@ def list_netflix_watches_for_user(extension_id):
     return make_response(res, 200)
 
 
-@app.route("/", methods=['GET'])
+@app.route("/admin/users", methods=['GET'])
 def list_active_users():
     guard_ip(request.remote_addr)
     q = db.session.query(User).order_by(User.creation_date.desc())
@@ -194,15 +195,6 @@ def list_active_users():
     return render_template('users.html', users=u)
 
 
-@app.route("/users", methods=['GET'])
-def list_users():
-    guard_ip(request.remote_addr)
-    q = db.session.query(User, UserMetaData).filter(User.id == UserMetaData.user_id)
-    for key in request.args:
-        q = q.filter(UserMetaData.key == key).filter(UserMetaData.value == request.args.get(key))
-
-    users = [u for u, _ in q.all()]
-    return render_template('users.html', users=set(users))
 
 
 @app.route("/<extension_id>", methods=['GET'])
