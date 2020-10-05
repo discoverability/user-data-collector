@@ -1,8 +1,9 @@
 import os
 import json
 import struct, ctypes
+from anonymizeip import anonymize_ip
 from sqlalchemy import func
-from flask import request, make_response, abort
+from flask import request, make_response, abort, redirect, url_for
 from app.main import app as api, db, cache
 from app.models import User, NetflixSuggestMetadata, NetflixWatchMetadata, Lolomo
 
@@ -58,7 +59,9 @@ class SetEncoder(json.JSONEncoder):
         return json.JSONEncoder.default(self, obj)
 
 
-# @api.route('/', defaults={'path': ''})
+@api.route("/", methods=['GET'])
+def server_root():
+    return redirect(API_ROOT+"/api")
 # @api.route('/<path:path>')
 # def hello(path):
 #    return make_response("hello " +path+" "+ str(request.path))
@@ -111,7 +114,7 @@ def get_latest_logs(limit):
     res = [
         {
             "user": log.user.extension_id,
-            "pseudo_ip": log.ip,
+            "pseudo_ip": anonymize_ip(log.ip),
             "timestamp": log.timestamp.timestamp(),
             "timestamp_human": str(log.timestamp),
             "video_id": log.video_id,
@@ -121,7 +124,7 @@ def get_latest_logs(limit):
                 {"rel": "session",
                  "href": API_ROOT + f"/api/user/{log.user.extension_id}/session/{log.single_page_session_id}"},
                 {"rel": "user", "href": API_ROOT + f"/api/user/{log.user.extension_id}"},
-                {"rel": "content", "href": f"https://platform-api.vod-prime.space/api/netflix/content/{log.video_id}", }
+                {"rel": "content", "href": f"https://platform-api.vod-prime.space/api/emns/provider/4/identifier/{log.video_id}", }
             ]
         } for
         log in logs]
@@ -138,12 +141,13 @@ def get_latest_watches(limit):
          "timestamp": w.timestamp.timestamp(),
          "timestamp_human": str(w.timestamp),
          "track_id": w.track_id,
-         "pseudo_ip": w.ip,
+         "pseudo_ip": anonymize_ip(w.ip),
          "links": [
 
              {"rel": "session",
               "href": API_ROOT + f"/api/user/{w.user.extension_id}/session/{w.single_page_session_id}"},
-             {"rel": "user", "href": API_ROOT + f"/api/user/{w.user.extension_id}"}
+             {"rel": "user", "href": API_ROOT + f"/api/user/{w.user.extension_id}"},
+             {"rel": "content", "href": f"https://platform-api.vod-prime.space/api/emns/provider/4/identifier/{w.video_id}", }
          ]
          } for
         w in watches]
@@ -224,7 +228,7 @@ def get_thumbnails_data(user_id, session_id):
         item["timestamp"] = timestamp.timestamp()
         item["timestamp_human"] = str(timestamp)
         item["links"] = [
-            {"rel": "content", "href": f"https://platform-api.vod-prime.space/api/netflix/content/{video_id}"}]
+            {"rel": "content", "href": f"https://platform-api.vod-prime.space/api/emns/provider/4/identifier/{video_id}"}]
         data["thumbnails"].append(item)
     data["links"] = get_user_links(user_id) + get_sessions_links(user_id, session_id)
     return json.dumps(data), 200, {'Content-Type': 'application/json'}
