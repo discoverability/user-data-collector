@@ -41,7 +41,7 @@ services:
       - "traefik.http.services.auth.loadbalancer.server.port=8080"
       - "traefik.http.routers.auth.tls.certresolver=myresolver"
       - "traefik.http.middlewares.corsheader.headers.accesscontrolallowmethods=GET,OPTIONS,PUT,POST"
-      - "traefik.http.middlewares.corsheader.headers.accesscontrolalloworiginlist=https://poc-vue.vod-prime.space/*,https://poc-vue.vod-prime.space"
+      - "traefik.http.middlewares.corsheader.headers.accesscontrolalloworiginlist=https://poc-vue.vod-prime.space/*,https://poc-vue.vod-prime.space,https://dev-api.vod-prime.space/*,https://dev-api.vod-prime.space"
       - "traefik.http.middlewares.corsheader.headers.accesscontrolmaxage=100"
       - "traefik.http.middlewares.corsheader.headers.addvaryheader=true"
       - "traefik.http.middlewares.corsheader.headers.customresponseheaders.Access-Control-Allow-Origin=*"
@@ -82,6 +82,14 @@ services:
       - "traefik.http.routers.auth-proxy.rule=host(`experimental-api.vod-prime.space`)"
       - "traefik.http.routers.auth-proxy.entrypoints=websecure"
       - "traefik.http.services.auth-proxy.loadbalancer.server.port=3000"
+      - "traefik.http.middlewares.corsheader.headers.accesscontrolallowmethods=GET,OPTIONS,PUT,POST"
+      - "traefik.http.middlewares.corsheader.headers.accesscontrolalloworiginlist=https://poc-vue.vod-prime.space/*,https://poc-vue.vod-prime.space,https://dev-api.vod-prime.space/*,https://dev-api.vod-prime.space"
+      - "traefik.http.middlewares.corsheader.headers.accesscontrolmaxage=100"
+      - "traefik.http.middlewares.corsheader.headers.addvaryheader=true"
+      - "traefik.http.middlewares.corsheader.headers.customresponseheaders.Access-Control-Allow-Origin=*"
+      - "traefik.http.middlewares.corsheader.headers.accessControlAllowCredentials=true"
+      - "traefik.http.routers.auth-proxy.middlewares=corsheader@docker"
+
     expose:
       - "3000"
     volumes:
