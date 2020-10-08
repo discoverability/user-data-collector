@@ -41,3 +41,7 @@ clean-model:
 	rm -rf migrations
 	rm -rf app/app.db
 
+run-prod:
+	docker-compose -f docker-compose.yaml -f docker-compose.prod.yaml up -d
+stop-prod:
+	docker-compose -f docker-compose.yaml -f docker-compose.prod.yaml down 
