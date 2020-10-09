@@ -23,10 +23,23 @@ services:
       - APP_ENV=production
       - SQLALCHEMY_DATABASE_URI=mysql://discoverability:aWuathigh8Ui@ts236797-001.dbaas.ovh.net:35824/discoverability
       - WORKERS_PER_CORE=1
+        #    - CACHE_REDIS_URL=redis://redis-cache:6379/0
+      - API_ROOT=https://api.vod-prime.space
+    labels:
+      - "traefik.http.services.conso-api.loadbalancer.server.port=80"
+    depends_on:
+      - redis-cache
+      - auth
+  conso-api-legacy:
+    environment:
+      - LOG_LEVEL=info
+      - APP_ENV=production
+      - SQLALCHEMY_DATABASE_URI=mysql://discoverability:aWuathigh8Ui@ts236797-001.dbaas.ovh.net:35824/discoverability
+      - WORKERS_PER_CORE=1
       - CACHE_REDIS_URL=redis://redis-cache:6379/0
       - API_ROOT=https://experimental-api.vod-prime.space
     labels:
-      - "traefik.http.services.conso-api.loadbalancer.server.port=80"
+      - "traefik.http.services.conso-api-legacy.loadbalancer.server.port=80"
     depends_on:
       - redis-cache
       - auth
@@ -98,4 +111,27 @@ services:
       - /opt/keycloak-gatekeeper
       - --config=/etc/keycloak-gatekeeper.conf
   
-
+  auth-proxy2:
+    image: quay.io/oauth2-proxy/oauth2-proxy:latest
+    depends_on:
+      - auth
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.auth-proxy2.tls.certresolver=myresolver"
+      - "traefik.http.routers.auth-proxy2.rule=host(`api.vod-prime.space`)"
+      - "traefik.http.routers.auth-proxy2.entrypoints=websecure"
+      - "traefik.http.services.auth-proxy2.loadbalancer.server.port=8082"
+      - "traefik.http.middlewares.corsheader.headers.accesscontrolallowmethods=GET,OPTIONS,PUT,POST"
+      - "traefik.http.middlewares.corsheader.headers.accesscontrolalloworiginlist=https://poc-vue.vod-prime.space/*,https://poc-vue.vod-prime.space,https://dev-api.vod-prime.space/*,https://dev-api.vod-prime.space"
+      - "traefik.http.middlewares.corsheader.headers.accesscontrolmaxage=100"
+      - "traefik.http.middlewares.corsheader.headers.addvaryheader=true"
+      - "traefik.http.middlewares.corsheader.headers.customresponseheaders.Access-Control-Allow-Origin=*"
+      - "traefik.http.middlewares.corsheader.headers.accessControlAllowCredentials=true"
+      - "traefik.http.routers.auth-proxy2.middlewares=corsheader@docker"
+    expose:
+      - "8082"
+    volumes:
+      - ./oauth2-proxy.cfg:/etc/oauth2-proxy.cfg
+    entrypoint:
+      - /bin/oauth2-proxy
+      - --config=/etc/oauth2-proxy.cfg
