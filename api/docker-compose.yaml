@@ -13,7 +13,10 @@ services:
     image: discoverability/conso-api
     labels:
      - "traefik.enable=true"
-
+  conso-api-legacy:
+    image: discoverability/conso-api
+    labels:
+     - "traefik.enable=true"
 
 
 
