@@ -29,7 +29,7 @@ class ProdConfig(object):
     CACHE_DEFAULT_TIMEOUT = 300
     CACHE_KEY_PREFIX = "conso-api"
     CACHE_REDIS_URL = os.environ.get("CACHE_REDIS_URL")
-    CACHE_TYPE="null"
+    
 
 
 env = os.environ.get("APP_ENV", "development")
