@@ -260,7 +260,8 @@ def add_netflix_suggest_log(extension_id):
                                appView=payload.get("appView", None),
                                usePresentedEvent=payload.get("usePresentedEvent", None),
                                json_object=payload.get("json_object", None),
-                               session=get_session(payload.get("single_page_session_id")))
+                               single_page_session_id=get_session(
+                                   payload.get("single_page_session_id")).single_page_session_id)
 
     db.session.add(n)
 
@@ -277,14 +278,13 @@ def add_netflix_lolomo_log(extension_id):
     guard_log_consent(u)
     payload = request.get_json()
     single_page_session_id = payload.get("single_page_session_id")
-    session = get_session(single_page_session_id)
 
     n = Lolomo(ip=request.remote_addr, user=u,
                rank=payload.get("rank", None),
                type=payload.get("type", None),
                associated_content=payload.get("associated_content", None),
                full_text_description=payload.get("full_text_description", None),
-               session=session
+               single_page_session_id=get_session(single_page_session_id).single_page_session_id
                )
 
     db.session.add(n)
@@ -295,8 +295,16 @@ def add_netflix_lolomo_log(extension_id):
 
 def get_session(single_page_session_id):
     session = db.session.query(Session).get(single_page_session_id)
+
     if session is None:
         session = Session(single_page_session_id=single_page_session_id)
+        try:
+            db.session.add(session)
+            db.session.commit()
+        except sqlalchemy.exc.IntegrityError as e:
+            db.session.rollback()
+            return db.session.query(Session).get(single_page_session_id)
+
     return session
 
 
@@ -309,6 +317,9 @@ def add_netflix_watch_log(extension_id, video_id):
     guard_watch_consent(u)
     payload = request.get_json()
 
+    session = get_session(
+        payload.get("single_page_session_id"))
+
     n = NetflixWatchMetadata(video_id=video_id,
                              track_id=payload.get("track_id"),
                              rank=payload.get("rank", None),
@@ -318,10 +329,9 @@ def add_netflix_watch_log(extension_id, video_id):
                              lolomo_id=payload.get("lolomo_id", None),
                              ip=request.remote_addr,
                              user=u,
-                             single_page_session_id=get_session(payload.get("single_page_session_id")))
+                             single_page_session_id=session.single_page_session_id)
 
     db.session.add(n)
-
     db.session.commit()
     return make_response("CREATED", 201)
 

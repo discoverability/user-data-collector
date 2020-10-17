@@ -17,8 +17,8 @@ class DevConfig(object):
 class ProdConfig(object):
     SQLALCHEMY_DATABASE_URI = os.environ.get("SQLALCHEMY_DATABASE_URI")
     # SQLALCHEMY_DATABASE_URI = 'sqlite:///' + os.path.join(basedir, 'app.db')
-    DEVELOPMENT = True
-    DEBUG = True  # some Flask specific configs
+    DEVELOPMENT = False
+    DEBUG = False  # some Flask specific configs
     SECRET_KEY = 'EMNS2606!'
 
     SQLALCHEMY_TRACK_MODIFICATIONS = False

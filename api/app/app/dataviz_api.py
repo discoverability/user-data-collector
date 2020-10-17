@@ -15,7 +15,7 @@ is_callable = lambda o: hasattr(o, '__call__')
 
 
 def get_api_root():
-    return request.url_root
+    return os.getenv("API_ROOT", "dummy://")
 
 
 def query_args(*names, **values):
@@ -128,7 +128,6 @@ def get_latest_logs(limit):
             "timestamp_human": str(log.timestamp),
             "video_id": log.video_id,
             "track_id": log.track_id,
-            "lolomo_id": log.lolomo_id,
 
             "links": [
                 {"rel": "session",
@@ -154,7 +153,7 @@ def get_latest_watches(limit):
          "timestamp_human": str(w.timestamp),
          "track_id": w.track_id,
          "pseudo_ip": anonymize_ip(w.ip),
-         "lolomo_id": w.lolomo_id,
+
          "links": [
 
              {"rel": "session",
@@ -219,7 +218,6 @@ def get_session_for_user(user_id, session_id):
 @cache.cached(timeout=10)
 def get_thumbnails_data(user_id, session_id):
     data = {}
-    data["thumbnails"] = []
 
     suggests = (
         db.session.query(NetflixSuggestMetadata).join(User)
@@ -228,14 +226,22 @@ def get_thumbnails_data(user_id, session_id):
             .filter(NetflixWatchMetadata.single_page_session_id == session_id)
             .all())
 
+    data["thumbnails"] = extract_thumbnails_data(suggests)
+    data["links"] = get_user_links(user_id) + get_sessions_links(user_id, session_id)
+    return json.dumps(data), 200, {'Content-Type': 'application/json'}
+
+
+def extract_thumbnails_data(suggests):
+    thumbnails_data = []
     for log in suggests:
         row = log.row
         rank = log.rank
         video_id = log.video_id
         track_id = log.track_id
         timestamp = log.timestamp
-        lolomo_info = [{"type": l.type, "content": l.associated_content, "desc": l.full_text_description} for l in
-                      log.session.lolomos if l.rank == row]
+        lolomo_info = [{"type": l.type, "content": l.associated_content, "desc": l.full_text_description, "row": l.rank}
+                       for l in
+                       log.session.lolomos if l.rank == row]
         if len(lolomo_info) > 0:
             lolomo_info = lolomo_info[0]
         else:
@@ -246,38 +252,24 @@ def get_thumbnails_data(user_id, session_id):
                 {"rel": "content",
                  "href": f"https://platform-api.vod-prime.space/api/emns/provider/4/identifier/{video_id}"}]}
 
-        data["thumbnails"].append(item)
-        
-    data["links"] = get_user_links(user_id) + get_sessions_links(user_id, session_id)
-    return json.dumps(data), 200, {'Content-Type': 'application/json'}
+        thumbnails_data.append(item)
+    return thumbnails_data
 
 
 @api.route("/api/user/<user_id>/thumbnails", methods=['GET'])
 @cache.cached(timeout=10)
 def get_user_thumbnails(user_id):
-    thumbnails = db.session.query(
-        NetflixSuggestMetadata.video_id,
-        func.max(NetflixSuggestMetadata.request_id),
-        func.max(NetflixSuggestMetadata.timestamp),
-        NetflixSuggestMetadata.track_id,
-        func.count(NetflixSuggestMetadata.track_id),
-        NetflixSuggestMetadata.user_id, NetflixSuggestMetadata.single_page_session_id).join(
-        User).filter(
-        User.extension_id == user_id).filter(
-        User.id == NetflixSuggestMetadata.user_id).group_by(NetflixSuggestMetadata.track_id,
-                                                            NetflixSuggestMetadata.video_id,
-                                                            NetflixSuggestMetadata.user_id,
-                                                            NetflixSuggestMetadata.single_page_session_id).all()
+    data = {}
 
-    t = {video_id: {
-        "request_id": request_id,
-        "timestamp": timestamp.timestamp(),
-        "timestamp_human": str(timestamp),
-        "track_id": track_id,
-        "count": count,
-        "links": get_session_and_content_link(user_id, single_page_session_id, video_id)} for
-        video_id, request_id, timestamp, track_id, count, user_id, single_page_session_id in thumbnails}
-    return json.dumps(t), 200, {'Content-Type': 'application/json'}
+    suggests = (
+        db.session.query(NetflixSuggestMetadata).join(User)
+            .filter(User.id == NetflixSuggestMetadata.user_id)
+            .filter(User.extension_id == user_id)
+            .all())
+
+    data["thumbnails"] = extract_thumbnails_data(suggests)
+    data["links"] = get_user_links(user_id)
+    return json.dumps(data), 200, {'Content-Type': 'application/json'}
 
 
 @api.route("/api/user/<user_id>/watches", methods=['GET'])
@@ -292,8 +284,12 @@ def get_user_watch(user_id):
         "track_id": watch.track_id,
         "request_id": watch.request_id,
         "timestamp": watch.timestamp.timestamp(),
-        "lolomo_content": [l.associated_content for l in watch.session.lolomos if l.rank == watch.row],
-        "lolomo_full_text_description": [l.full_text_description for l in watch.session.lolomos if l.rank == watch.row],
+        "row": watch.row,
+        "rank": watch.rank,
+        "lolomo_info": [
+            {"type": l.type, "content": l.associated_content, "desc": l.full_text_description, "row": l.rank}
+            for l in
+            watch.session.lolomos if l.rank == watch.row],
         "links": get_sessions_links(user_id, watch.single_page_session_id)} for watch in watches]
 
     w["links"] = get_user_links(user_id)
@@ -340,7 +336,7 @@ def get_user_watch_for_session(user_id, session_id):
 def get_watches_data(session_id, user_id, watches):
     return {
         "watches": {watch.video_id: {"timestamp": watch.timestamp.timestamp(), "timestamp_human": str(watch.timestamp),
-                                     "lolomo_id": watch.lolomo_id}
+                                     "row" : watch.row, "rank" : watch.rank}
                     for user, watch in watches},
         "links": [
 

@@ -88,7 +88,7 @@ class StreamLog(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey("user.id"))
     timestamp = db.Column(db.DateTime, default=datetime.datetime.utcnow)
     type = db.Column(db.String(50))
-    single_page_session_id = db.Column(db.String(64), db.ForeignKey("session.single_page_session_id"), default="", server_default='')
+    single_page_session_id = db.Column(db.String(64), db.ForeignKey("session.single_page_session_id"), )
 
 
 
@@ -113,7 +113,7 @@ class NetflixSuggestMetadata(StreamLog):
     usePresentedEvent = db.Column(db.Boolean)
     json_object = db.Column(db.String(1024))
     user = db.relationship("User", back_populates="suggestions", )
-    session = db.relationship("Session", back_populates="thumbnails", )
+    session = db.relationship("Session", back_populates="thumbnails", cascade="save-update")
 
     __mapper_args__ = {"polymorphic_identity": "suggest"}
 
@@ -123,6 +123,6 @@ class NetflixWatchMetadata(StreamLog):
     id = db.Column(db.ForeignKey("log.id"), primary_key=True)
 
     user = db.relationship("User", back_populates="watches")
-    session = db.relationship("Session", back_populates="watches", )
+    session = db.relationship("Session", back_populates="watches", cascade="save-update")
 
     __mapper_args__ = {"polymorphic_identity": "watch"}
