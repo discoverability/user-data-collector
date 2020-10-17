@@ -45,15 +45,15 @@ class Session(db.Model):
     single_page_session_id = db.Column(db.String(64), primary_key=True)
 
     lolomos = db.relationship(
-        "Lolomo", back_populates="session", cascade="all, delete-orphan"
+        "Lolomo", back_populates="session", cascade="save-update"
     )
 
     thumbnails = db.relationship(
-        "NetflixSuggestMetadata", back_populates="session", cascade="all, delete-orphan"
+        "NetflixSuggestMetadata", back_populates="session", cascade="save-update"
     )
 
     watches = db.relationship(
-        "NetflixWatchMetadata", back_populates="session", cascade="all, delete-orphan"
+        "NetflixWatchMetadata", back_populates="session", cascade="save-update"
     )
 
 
@@ -68,8 +68,8 @@ class Lolomo(db.Model):
     associated_content = db.Column(db.String(64))
     full_text_description = db.Column(db.String(512))
     single_page_session_id = db.Column(db.String(64), db.ForeignKey("session.single_page_session_id"), default="", server_default='')
-    user = db.relationship("User", back_populates="lolomos", )
-    session = db.relationship("Session", back_populates="lolomos", )
+    user = db.relationship("User", back_populates="lolomos", cascade="save-update")
+    session = db.relationship("Session", back_populates="lolomos", cascade="save-update")
 
 
 class StreamLog(db.Model):

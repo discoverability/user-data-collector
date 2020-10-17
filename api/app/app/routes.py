@@ -1,4 +1,5 @@
-from app.models import StreamLog, User, NetflixSuggestMetadata, NetflixWatchMetadata, Lolomo, UserMetaData, AuthorizedIP
+from app.models import StreamLog, User, NetflixSuggestMetadata, NetflixWatchMetadata, Lolomo, UserMetaData, \
+    AuthorizedIP, Session
 
 import json
 from flask import request, make_response, render_template, abort
@@ -26,14 +27,10 @@ class SetEncoder(json.JSONEncoder):
         return json.JSONEncoder.default(self, obj)
 
 
-
-
 def guard_ip(ip):
     ip = db.session.query(AuthorizedIP).filter(AuthorizedIP.ip == ip).first()
     if ip is None:
-
         abort(403, "Your IP is not authorized to use this feature. Contact Admin")
-
 
 
 def guard_log_consent(u):
@@ -72,7 +69,6 @@ def privacy_form(extension_id):
         return abort(404, "not such user")
 
     return render_template('privacy.html', user=u)
-
 
 
 @app.route("/<extension_id>/netflix", methods=['GET'])
@@ -205,8 +201,6 @@ def list_netflix_watches_for_user(extension_id):
     return make_response(res, 200)
 
 
-
-
 @app.route("/users", methods=['GET'])
 def list_users():
     guard_ip(request.remote_addr)
@@ -266,7 +260,7 @@ def add_netflix_suggest_log(extension_id):
                                appView=payload.get("appView", None),
                                usePresentedEvent=payload.get("usePresentedEvent", None),
                                json_object=payload.get("json_object", None),
-                               single_page_session_id=payload.get("single_page_session_id", None))
+                               session=get_session(payload.get("single_page_session_id")))
 
     db.session.add(n)
 
@@ -282,20 +276,28 @@ def add_netflix_lolomo_log(extension_id):
 
     guard_log_consent(u)
     payload = request.get_json()
+    single_page_session_id = payload.get("single_page_session_id")
+    session = get_session(single_page_session_id)
 
     n = Lolomo(ip=request.remote_addr, user=u,
                rank=payload.get("rank", None),
                type=payload.get("type", None),
                associated_content=payload.get("associated_content", None),
                full_text_description=payload.get("full_text_description", None),
-               single_page_session_id=payload.get("single_page_session_id", None)
-
+               session=session
                )
 
     db.session.add(n)
 
     db.session.commit()
     return make_response("CREATED", 201)
+
+
+def get_session(single_page_session_id):
+    session = db.session.query(Session).get(single_page_session_id)
+    if session is None:
+        session = Session(single_page_session_id=single_page_session_id)
+    return session
 
 
 @app.route("/<extension_id>/netflix/watch/<video_id>", methods=['POST'])
@@ -316,7 +318,7 @@ def add_netflix_watch_log(extension_id, video_id):
                              lolomo_id=payload.get("lolomo_id", None),
                              ip=request.remote_addr,
                              user=u,
-                             single_page_session_id=payload.get("single_page_session_id", None))
+                             single_page_session_id=get_session(payload.get("single_page_session_id")))
 
     db.session.add(n)
 
@@ -378,7 +380,6 @@ def del_users():
 
 @app.route("/<extension_id>/<content_id>", methods=['POST'])
 def add_log_for_user(extension_id, content_id):
-
     u = db.session.query(User).filter_by(extension_id=extension_id).first()
     if u is None:
         logging.error(f"Unknown User {extension_id} tried to log data")
