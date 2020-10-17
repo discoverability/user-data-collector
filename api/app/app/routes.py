@@ -1,10 +1,9 @@
 from app.models import StreamLog, User, NetflixSuggestMetadata, NetflixWatchMetadata, Lolomo, UserMetaData, AuthorizedIP
 
 import json
-from flask import request, make_response, render_template, abort, ok
-
-from app import app
-from app import db
+from flask import request, make_response, render_template, abort
+from app.main import app
+from app.main import db
 import werkzeug.exceptions as ex
 import time
 import datetime
@@ -27,55 +26,6 @@ class SetEncoder(json.JSONEncoder):
         return json.JSONEncoder.default(self, obj)
 
 
-@app.route("/dataviz-api/v1/users", methods=['GET'])
-def get_dataviz_users():
-    users = db.session.query(User).all()
-    res = []
-    for u in users:
-        user_data = {}
-        user_data["user_id"] = u.extension_id
-        user_data["creation_date"] = u.creation_date.timestamp()
-        user_data["sessions"] = []
-        for l in {l.single_page_session_id for l in u.lolomos}:
-            session_data = {}
-            session_data["session_id"] = l
-            creation_date=next((ll.timestamp for ll in u.lolomos if ll.single_page_session_id == l))
-            session_data["creation_date"] =creation_date.timestamp()
-
-            link_data = {}
-            link_data["name"]="thumbnails"
-            link_data["href"]="/dataviz-api/v1/thumbnails/%s/%s"%(u.extension_id,l)
-            session_data["links"] = [link_data]
-            user_data["sessions"].append(session_data)
-        res.append(user_data)
-
-    return json.dumps(res, cls=SetEncoder), 200, {'Content-Type': 'application/json'}
-
-
-@app.route("/dataviz-api/v1/thumbnails/<user_id>/<session_id>", methods=['GET'])
-def get_thumbnails_data(user_id, session_id):
-    data = []
-
-    suggests = (db.session.query(User, NetflixSuggestMetadata).order_by(NetflixSuggestMetadata.timestamp)
-                .filter(User.id == NetflixSuggestMetadata.user_id)
-                .filter(User.extension_id == user_id)
-                .filter(NetflixWatchMetadata.single_page_session_id == session_id)
-                .order_by(NetflixSuggestMetadata.timestamp, NetflixSuggestMetadata.row, NetflixSuggestMetadata.rank)
-                .all())
-
-    suggests = {"%s/%03d/%03d" % (s.timestamp.strftime("%m%d%H%M"), s.row, s.rank): s for _, s in suggests}
-
-    # listings = [list(g) for  g in groupby(suggests, attrgetter('timestamp','row','rank'))]
-
-    res = "<html><body>#timestamp;ip;content_id;location;row;rank;app_view<br>"
-    for k_suggest in sorted(suggests):
-        suggest = suggests[k_suggest]
-        item = {}
-        item["content_id"] = suggest.video_id
-        item["row"] = suggest.row
-        item["col"] = suggest.rank
-        data.append(item)
-    return json.dumps(data), 200, {'Content-Type': 'application/json'}
 
 
 def guard_ip(ip):
@@ -255,13 +205,6 @@ def list_netflix_watches_for_user(extension_id):
     return make_response(res, 200)
 
 
-@app.route("/", methods=['GET'])
-def list_active_users():
-    guard_ip(request.remote_addr)
-    q = db.session.query(User).order_by(User.creation_date.desc())
-    q = q.limit(request.args.get("limit", 10))
-    u = [u for u in q.all()]
-    return render_template('users.html', users=u)
 
 
 @app.route("/users", methods=['GET'])
@@ -452,7 +395,7 @@ def add_user_metadata(extension_id):
     u = db.session.query(User).filter_by(extension_id=extension_id).first()
     if u is None:
         return make_response("NO SUCH extension_id REGISTERED", 404)
-    guard_
+
     for key in request.args:
         already_present_meta = db.session.query(UserMetaData).filter_by(user_id=u.id).filter_by(key=key).first()
         if already_present_meta is not None:

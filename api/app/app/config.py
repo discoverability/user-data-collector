@@ -28,7 +28,7 @@ class ProdConfig(object):
     CACHE_TYPE = "redis"  # Flask-Caching related configs
     CACHE_DEFAULT_TIMEOUT = 300
     CACHE_KEY_PREFIX = "conso-api"
-    #CACHE_REDIS_URL = os.environ.get("CACHE_REDIS_URL")
+    CACHE_REDIS_URL = os.environ.get("CACHE_REDIS_URL")
     CACHE_TYPE="null"
 
 
