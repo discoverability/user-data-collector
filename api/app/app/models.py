@@ -5,7 +5,7 @@ from sqlalchemy.sql import func
 
 class AuthorizedIP(db.Model):
     __tablename__ = "authorized_ip"
-    ip = db.Column(db.String(15),primary_key=True)
+    ip = db.Column(db.String(15), primary_key=True)
 
 
 class User(db.Model):
@@ -40,6 +40,23 @@ class UserMetaData(db.Model):
     user = db.relationship("User", back_populates="user_metadata")
 
 
+class Session(db.Model):
+    __tablename__ = "session"
+    single_page_session_id = db.Column(db.String(64), primary_key=True)
+
+    lolomos = db.relationship(
+        "Lolomo", back_populates="session", cascade="all, delete-orphan"
+    )
+
+    thumbnails = db.relationship(
+        "NetflixSuggestMetadata", back_populates="session", cascade="all, delete-orphan"
+    )
+
+    watches = db.relationship(
+        "NetflixWatchMetadata", back_populates="session", cascade="all, delete-orphan"
+    )
+
+
 class Lolomo(db.Model):
     __tablename__ = "lolomo"
     id = db.Column(db.Integer, primary_key=True)
@@ -50,8 +67,9 @@ class Lolomo(db.Model):
     type = db.Column(db.String(64))
     associated_content = db.Column(db.String(64))
     full_text_description = db.Column(db.String(512))
-    single_page_session_id = db.Column(db.String(64), default="", server_default='')
+    single_page_session_id = db.Column(db.String(64), db.ForeignKey("session.single_page_session_id"), default="", server_default='')
     user = db.relationship("User", back_populates="lolomos", )
+    session = db.relationship("Session", back_populates="lolomos", )
 
 
 class StreamLog(db.Model):
@@ -70,7 +88,10 @@ class StreamLog(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey("user.id"))
     timestamp = db.Column(db.DateTime, default=datetime.datetime.utcnow)
     type = db.Column(db.String(50))
-    single_page_session_id = db.Column(db.String(64), default="", server_default='')
+    single_page_session_id = db.Column(db.String(64), db.ForeignKey("session.single_page_session_id"), default="", server_default='')
+
+
+
 
     __mapper_args__ = {
         "polymorphic_identity": "stream_log",
@@ -92,6 +113,7 @@ class NetflixSuggestMetadata(StreamLog):
     usePresentedEvent = db.Column(db.Boolean)
     json_object = db.Column(db.String(1024))
     user = db.relationship("User", back_populates="suggestions", )
+    session = db.relationship("Session", back_populates="thumbnails", )
 
     __mapper_args__ = {"polymorphic_identity": "suggest"}
 
@@ -101,5 +123,6 @@ class NetflixWatchMetadata(StreamLog):
     id = db.Column(db.ForeignKey("log.id"), primary_key=True)
 
     user = db.relationship("User", back_populates="watches")
+    session = db.relationship("Session", back_populates="watches", )
 
     __mapper_args__ = {"polymorphic_identity": "watch"}

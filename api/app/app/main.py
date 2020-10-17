@@ -15,7 +15,6 @@ app = Flask(__name__)
 app.jinja_env.add_extension('jinja2.ext.do')
 CORS(app)
 
-
 from app.config import config
 
 app.config.from_object(config)
@@ -24,5 +23,7 @@ db = SQLAlchemy(app)
 migrate = Migrate(app, db)
 toolbar = DebugToolbarExtension(app)
 ProxyFix(app.wsgi_app, x_for=1, x_host=1)
+execution_context = os.environ.get("EXECUTION_CONTEXT", "conso-api;api")
+execution_contexts = execution_context.split(";")
 from app.routes import *
 from app.dataviz_api import *

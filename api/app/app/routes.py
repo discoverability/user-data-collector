@@ -1,12 +1,15 @@
 from app.models import StreamLog, User, NetflixSuggestMetadata, NetflixWatchMetadata, Lolomo, UserMetaData, AuthorizedIP
+
 import json
-from flask import request, make_response, render_template, abort
+from flask import request, make_response, render_template, abort, ok
+
 from app import app
 from app import db
 import werkzeug.exceptions as ex
 import time
 import datetime
 import logging
+
 import collections
 import sqlalchemy
 
@@ -78,7 +81,9 @@ def get_thumbnails_data(user_id, session_id):
 def guard_ip(ip):
     ip = db.session.query(AuthorizedIP).filter(AuthorizedIP.ip == ip).first()
     if ip is None:
+
         abort(403, "Your IP is not authorized to use this feature. Contact Admin")
+
 
 
 def guard_log_consent(u):
@@ -117,6 +122,7 @@ def privacy_form(extension_id):
         return abort(404, "not such user")
 
     return render_template('privacy.html', user=u)
+
 
 
 @app.route("/<extension_id>/netflix", methods=['GET'])
@@ -429,9 +435,10 @@ def del_users():
 
 @app.route("/<extension_id>/<content_id>", methods=['POST'])
 def add_log_for_user(extension_id, content_id):
+
     u = db.session.query(User).filter_by(extension_id=extension_id).first()
     if u is None:
-        logging.error("Unknown User " + extension_id + " tried to log data")
+        logging.error(f"Unknown User {extension_id} tried to log data")
         return make_response("NO SUCH extension_id REGISTERED", 404)
     guard_log_consent(u)
     s = StreamLog(content_id=content_id, ip=request.remote_addr, user=u)
@@ -445,6 +452,7 @@ def add_user_metadata(extension_id):
     u = db.session.query(User).filter_by(extension_id=extension_id).first()
     if u is None:
         return make_response("NO SUCH extension_id REGISTERED", 404)
+    guard_
     for key in request.args:
         already_present_meta = db.session.query(UserMetaData).filter_by(user_id=u.id).filter_by(key=key).first()
         if already_present_meta is not None:
