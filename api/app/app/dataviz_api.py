@@ -194,14 +194,19 @@ def get_dataviz_users():
                 link_data["name"] = "thumbnails"
                 link_data["href"] = get_api_root() + "api/user/%s/session/%s/thumbnails" % (u.extension_id, l)
 
+                session_link = {}
+                session_link["name"] = "session"
+                session_link["href"] = get_api_root() + "api/user/%s/session/%s" % (u.extension_id, l)
+
                 watch_link = {}
                 watch_link["name"] = "watches"
                 watch_link["href"] = get_api_root() + "api/user/%s/session/%s/watches" % (u.extension_id, l)
 
-                watch_link = {}
-                watch_link["name"] = "lolomos"
-                watch_link["href"] = get_api_root() + "api/user/%s/session/%s/lolomos" % (u.extension_id, l)
-                session_data["links"] = [link_data, watch_link]
+                lolomo_link = {}
+                lolomo_link["name"] = "lolomos"
+                lolomo_link["href"] = get_api_root() + "api/user/%s/session/%s/lolomos" % (u.extension_id, l)
+
+                session_data["links"] = [link_data, watch_link, lolomo_link, session_link]
                 user_data["sessions"].append(session_data)
         if len(user_data["sessions"]) > 0:
             res.append(user_data)
