@@ -192,11 +192,15 @@ def get_dataviz_users():
 
                 link_data = {}
                 link_data["name"] = "thumbnails"
-                link_data["href"] = get_api_root() + "api/user/%s/thumbnails/%s" % (u.extension_id, l)
+                link_data["href"] = get_api_root() + "api/user/%s/session/%s/thumbnails" % (u.extension_id, l)
 
                 watch_link = {}
                 watch_link["name"] = "watches"
-                watch_link["href"] = get_api_root() + "api/user/%s/watches/%s" % (u.extension_id, l)
+                watch_link["href"] = get_api_root() + "api/user/%s/session/%s/watches" % (u.extension_id, l)
+
+                watch_link = {}
+                watch_link["name"] = "lolomos"
+                watch_link["href"] = get_api_root() + "api/user/%s/session/%s/lolomos" % (u.extension_id, l)
                 session_data["links"] = [link_data, watch_link]
                 user_data["sessions"].append(session_data)
         if len(user_data["sessions"]) > 0:
@@ -214,7 +218,7 @@ def get_session_for_user(user_id, session_id):
     return json.dumps(res, cls=SetEncoder), 200, {'Content-Type': 'application/json'}
 
 
-@api.route("/api/user/<user_id>/thumbnails/<session_id>", methods=['GET'])
+@api.route("/api/user/<user_id>/session/<session_id>/thumbnails", methods=['GET'])
 @cache.cached(timeout=10)
 def get_thumbnails_data(user_id, session_id):
     data = {}
@@ -366,7 +370,7 @@ def get_user_watch(user_id):
     return json.dumps(w), 200, {'Content-Type': 'application/json'}
 
 
-@api.route("/api/user/<user_id>/watches/<session_id>", methods=['GET'])
+@api.route("/api/user/<user_id>/session/<session_id>/watches", methods=['GET'])
 @cache.cached(timeout=10)
 def get_user_watch_for_session(user_id, session_id):
     suggests = (db.session.query(User, NetflixSuggestMetadata).order_by(NetflixSuggestMetadata.timestamp)
@@ -411,7 +415,7 @@ def get_watches_data(session_id, user_id, watches):
 
             {
                 "rel": "thumbnails",
-                "href": get_api_root() + f"api/user/{user_id}/thumbnails/{session_id}"
+                "href": get_api_root() + f"api/user/{user_id}/session/{session_id}/thumbnails"
             },
             {
                 "rel": "user",
@@ -419,7 +423,11 @@ def get_watches_data(session_id, user_id, watches):
             },
             {
                 "rel": "self",
-                "href": get_api_root() + f"api/user/{user_id}/watches/{session_id}"
+                "href": get_api_root() + f"api/user/{user_id}/session/{session_id}/watches"
+            },
+            {
+                "rel": "lolomos",
+                "href": get_api_root() + f"api/user/{user_id}/session/{session_id}/lolomos"
             },
             {
                 "rel": "user_gui",
@@ -452,11 +460,11 @@ def get_sessions_for_user(user_id):
                        "creation_date_human": str(lolomo[1]), "links": [
             {
                 "rel": "thumbnails",
-                "href": get_api_root() + f"api/user/{user_id}/thumbnails/{lolomo[0]}"
+                "href": get_api_root() + f"api/user/{user_id}/session/{lolomo[0]}/thumbnails"
             },
             {
                 "rel": "watches",
-                "href": get_api_root() + f"api/user/{user_id}/watches/{lolomo[0]}"
+                "href": get_api_root() + f"api/user/{user_id}/session/{lolomo[0]}/watches"
             },
             {
                 "rel": "lolomos",
@@ -480,12 +488,16 @@ def get_sessions_links(user_id, session_id):
         ,
         {
             "rel": "watches",
-            "href": get_api_root() + f"api/user/{user_id}/watches/{session_id}"
+            "href": get_api_root() + f"api/user/{user_id}/session/{session_id}/watches"
         }
         ,
         {
             "rel": "thumbnails",
-            "href": get_api_root() + f"api/user/{user_id}/thumbnails/{session_id}"
+            "href": get_api_root() + f"api/user/{user_id}/session/{session_id}/thumbnails"
+        },
+        {
+            "rel": "lolomos",
+            "href": get_api_root() + f"api/user/{user_id}/session/{session_id}/lolomos"
         }
 
     ]
