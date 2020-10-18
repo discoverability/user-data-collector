@@ -17,10 +17,10 @@ class DevConfig(object):
 class ProdConfig(object):
     SQLALCHEMY_DATABASE_URI = os.environ.get("SQLALCHEMY_DATABASE_URI")
     # SQLALCHEMY_DATABASE_URI = 'sqlite:///' + os.path.join(basedir, 'app.db')
-    DEVELOPMENT = True
+    DEVELOPMENT = False
     DEBUG = False  # some Flask specific configs
     SECRET_KEY = 'EMNS2606!'
-    SQLALCHEMY_ECHO = True
+    SQLALCHEMY_ECHO = False
 
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SQLALCHEMY_ENGINE_OPTIONS = {"pool_size": 100, "max_overflow": 100, "pool_recycle": 280}
