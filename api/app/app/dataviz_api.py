@@ -231,7 +231,58 @@ def get_thumbnails_data(user_id, session_id):
     return json.dumps(data), 200, {'Content-Type': 'application/json'}
 
 
-def extract_thumbnails_data(suggests):
+@api.route("/api/user/<user_id>/lolomo/<lolomo_id>", methods=['GET'])
+@cache.cached(timeout=10)
+def get_thumnails_for_lolomo(user_id, lolomo_id):
+    data = {}
+
+    suggests = (
+        db.session.query(NetflixSuggestMetadata).join(User).join(Lolomo)
+            .filter(User.id == NetflixSuggestMetadata.user_id)
+            .filter(User.extension_id == user_id)
+            .filter(Lolomo.id == lolomo_id)
+            .filter(NetflixWatchMetadata.row == Lolomo.rank)
+
+            .all())
+
+    data["lolomo_info"] = extract_lolomo_data([db.session.query(Lolomo).get(lolomo_id)])[0]
+    data["thumbnails"] = extract_thumbnails_data(sorted(set(suggests), key=lambda x: x.rank), include_lolomo=False)
+    data["links"] = get_user_links(user_id)
+    return json.dumps(data), 200, {'Content-Type': 'application/json'}
+
+
+def extract_lolomo_data(lolomos):
+    lolomo_data = []
+
+    for l in lolomos:
+        lolomo_data.append({"rank": l.rank, "associated_content": l.associated_content, "type": l.type,
+                            "full_text_description": l.full_text_description, "timestamp": l.timestamp.timestamp(),
+                            "timestamp_human": str(l.timestamp), "links": {"rel": "thumbnails-for-lolomo",
+                                                                           "href": get_api_root() + f"api/user/{l.user.extension_id}/lolomo/{l.id}"
+
+                                                                           }})
+
+    return lolomo_data
+
+
+@api.route("/api/user/<user_id>/lolomos/<session_id>", methods=['GET'])
+@cache.cached(timeout=10)
+def get_lolomo_data(user_id, session_id):
+    data = {}
+
+    lolomos = (
+        db.session.query(Lolomo).join(User)
+            .filter(User.id == Lolomo.user_id)
+            .filter(Lolomo.single_page_session_id == session_id)
+            .order_by(Lolomo.timestamp.desc())
+            .all())
+
+    data["lolomos"] = extract_lolomo_data(lolomos)
+    data["links"] = get_user_links(user_id) + get_sessions_links(user_id, session_id)
+    return json.dumps(data), 200, {'Content-Type': 'application/json'}
+
+
+def extract_thumbnails_data(suggests, include_lolomo=True):
     thumbnails_data = []
     for log in suggests:
         row = log.row
@@ -239,18 +290,21 @@ def extract_thumbnails_data(suggests):
         video_id = log.video_id
         track_id = log.track_id
         timestamp = log.timestamp
-        lolomo_info = [{"type": l.type, "content": l.associated_content, "desc": l.full_text_description, "row": l.rank}
-                       for l in
-                       log.session.lolomos if l.rank == row]
-        if len(lolomo_info) > 0:
-            lolomo_info = lolomo_info[0]
-        else:
-            lolomo_info = ""
 
         item = {"row": row, "col": rank, "video_id": video_id, "track_id": track_id, "timestamp": timestamp.timestamp(),
-                "timestamp_human": str(timestamp), "lolomo_info": lolomo_info, "links": [
+                "timestamp_human": str(timestamp), "links": [
                 {"rel": "content",
                  "href": f"https://platform-api.vod-prime.space/api/emns/provider/4/identifier/{video_id}"}]}
+        if include_lolomo:
+            lolomo_info = [
+                {"type": l.type, "content": l.associated_content, "desc": l.full_text_description, "row": l.rank}
+                for l in
+                log.session.lolomos if l.rank == row]
+            if len(lolomo_info) > 0:
+                lolomo_info = lolomo_info[0]
+            else:
+                lolomo_info = ""
+            item["lolomo_info"] = lolomo_info
 
         thumbnails_data.append(item)
     return thumbnails_data
@@ -269,6 +323,21 @@ def get_user_thumbnails(user_id):
 
     data["thumbnails"] = extract_thumbnails_data(suggests)
     data["links"] = get_user_links(user_id)
+    return json.dumps(data), 200, {'Content-Type': 'application/json'}
+
+
+@api.route("/api/user/<user_id>/lolomos", methods=['GET'])
+@cache.cached(timeout=10)
+def get_user_lolomos(user_id):
+    data = {}
+    data["lolomos"] = []
+    lolomos = (
+        db.session.query(Lolomo).join(User)
+            .filter(User.id == Lolomo.user_id)
+            .order_by(Lolomo.timestamp.desc())
+            .all())
+
+    data["lolomos"] = extract_lolomo_data(lolomos)
     return json.dumps(data), 200, {'Content-Type': 'application/json'}
 
 
@@ -336,7 +405,7 @@ def get_user_watch_for_session(user_id, session_id):
 def get_watches_data(session_id, user_id, watches):
     return {
         "watches": {watch.video_id: {"timestamp": watch.timestamp.timestamp(), "timestamp_human": str(watch.timestamp),
-                                     "row" : watch.row, "rank" : watch.rank}
+                                     "row": watch.row, "rank": watch.rank}
                     for user, watch in watches},
         "links": [
 
@@ -388,6 +457,10 @@ def get_sessions_for_user(user_id):
             {
                 "rel": "watches",
                 "href": get_api_root() + f"api/user/{user_id}/watches/{lolomo[0]}"
+            },
+            {
+                "rel": "lolomos",
+                "href": get_api_root() + f"api/user/{user_id}/lolomos/{lolomo[0]}"
             }
         ]} for lolomo in lolomos}
     return json.dumps(res), 200, {'Content-Type': 'application/json'}
@@ -445,7 +518,12 @@ def get_user_links(user_id):
         {
             "rel": "all-thumbnails",
             "href": get_api_root() + f"api/user/{user_id}/thumbnails"
+        },
+        {
+            "rel": "all-lolomos",
+            "href": get_api_root() + f"api/user/{user_id}/lolomos"
         }
+
     ]
 
 

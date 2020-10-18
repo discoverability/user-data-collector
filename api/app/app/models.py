@@ -67,7 +67,8 @@ class Lolomo(db.Model):
     type = db.Column(db.String(64))
     associated_content = db.Column(db.String(64))
     full_text_description = db.Column(db.String(512))
-    single_page_session_id = db.Column(db.String(64), db.ForeignKey("session.single_page_session_id"), default="", server_default='')
+    single_page_session_id = db.Column(db.String(64), db.ForeignKey("session.single_page_session_id"), default="",
+                                       server_default='')
     user = db.relationship("User", back_populates="lolomos", cascade="save-update")
     session = db.relationship("Session", back_populates="lolomos", cascade="save-update")
 
@@ -89,9 +90,6 @@ class StreamLog(db.Model):
     timestamp = db.Column(db.DateTime, default=datetime.datetime.utcnow)
     type = db.Column(db.String(50))
     single_page_session_id = db.Column(db.String(64), db.ForeignKey("session.single_page_session_id"), )
-
-
-
 
     __mapper_args__ = {
         "polymorphic_identity": "stream_log",
@@ -116,6 +114,13 @@ class NetflixSuggestMetadata(StreamLog):
     session = db.relationship("Session", back_populates="thumbnails", cascade="save-update")
 
     __mapper_args__ = {"polymorphic_identity": "suggest"}
+
+    def __eq__(self, other):
+        return self.row == other.row and self.rank == other.rank and self.video_id == other.video_id \
+               and self.track_id == other.track_id and self.user_id == other.user_id
+
+    def __hash__(self):
+        return hash(('r', self.row, "rank", self.rank, "v", self.video_id, "t", self.track_id, "u", self.user_id))
 
 
 class NetflixWatchMetadata(StreamLog):
