@@ -265,7 +265,7 @@ def extract_lolomo_data(lolomos):
     return lolomo_data
 
 
-@api.route("/api/user/<user_id>/lolomos/<session_id>", methods=['GET'])
+@api.route("/api/user/<user_id>/session/<session_id>/lolomos", methods=['GET'])
 @cache.cached(timeout=10)
 def get_lolomo_data(user_id, session_id):
     data = {}
@@ -274,7 +274,7 @@ def get_lolomo_data(user_id, session_id):
         db.session.query(Lolomo).join(User)
             .filter(User.id == Lolomo.user_id)
             .filter(Lolomo.single_page_session_id == session_id)
-            .order_by(Lolomo.timestamp.desc())
+            .order_by(Lolomo.rank)
             .all())
 
     data["lolomos"] = extract_lolomo_data(lolomos)
@@ -460,7 +460,7 @@ def get_sessions_for_user(user_id):
             },
             {
                 "rel": "lolomos",
-                "href": get_api_root() + f"api/user/{user_id}/lolomos/{lolomo[0]}"
+                "href": get_api_root() + f"api/user/{user_id}/session/{lolomo[0]}/lolomos"
             }
         ]} for lolomo in lolomos}
     return json.dumps(res), 200, {'Content-Type': 'application/json'}
