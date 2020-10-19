@@ -8,6 +8,8 @@ from flask_migrate import Migrate
 from flask_cors import CORS
 from flask_caching import Cache
 
+
+
 basedir = os.path.abspath(os.path.dirname(__file__))
 
 app = Flask(__name__)
@@ -23,6 +25,7 @@ db = SQLAlchemy(app)
 migrate = Migrate(app, db)
 toolbar = DebugToolbarExtension(app)
 ProxyFix(app.wsgi_app, x_for=1, x_host=1)
+
 execution_context = os.environ.get("EXECUTION_CONTEXT", "conso-api;api")
 execution_contexts = execution_context.split(";")
 from app.routes import *

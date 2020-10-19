@@ -1,6 +1,7 @@
 from app.main import db
 import datetime
 from sqlalchemy.sql import func
+import json
 
 
 class AuthorizedIP(db.Model):
@@ -72,6 +73,11 @@ class Lolomo(db.Model):
     user = db.relationship("User", back_populates="lolomos", cascade="save-update")
     session = db.relationship("Session", back_populates="lolomos", cascade="save-update")
 
+    def json(self):
+        return json.dumps(
+            {"lolomo": {"rank": self.rank, "type": self.type, "associated_content": self.associated_content,
+                        "full_text_description": self.full_text_description}})
+
 
 class StreamLog(db.Model):
     __tablename__ = "log"
@@ -121,6 +127,10 @@ class NetflixSuggestMetadata(StreamLog):
 
     def __hash__(self):
         return hash(('r', self.row, "rank", self.rank, "v", self.video_id, "t", self.track_id, "u", self.user_id))
+
+    def json_content(self):
+        return json.dumps(
+            {"content": {"track_id": self.track_id, "video_id": self.video_id}})
 
 
 class NetflixWatchMetadata(StreamLog):

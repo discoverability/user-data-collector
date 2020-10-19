@@ -4,6 +4,7 @@ from app.models import StreamLog, User, NetflixSuggestMetadata, NetflixWatchMeta
 import json
 from flask import request, make_response, render_template, abort
 from app.main import app
+from app.integration import MessagingGateway
 from app.main import db
 import werkzeug.exceptions as ex
 import time
@@ -264,6 +265,7 @@ def add_netflix_suggest_log(extension_id):
                                    payload.get("single_page_session_id")).single_page_session_id)
 
     db.session.add(n)
+    MessagingGateway.publish(n)
 
     db.session.commit()
     return make_response("CREATED {} {}".format(n.track_id, u.extension_id), 201)
@@ -288,6 +290,7 @@ def add_netflix_lolomo_log(extension_id):
                )
 
     db.session.add(n)
+    MessagingGateway.publish(n)
 
     db.session.commit()
     return make_response("CREATED", 201)
@@ -332,6 +335,7 @@ def add_netflix_watch_log(extension_id, video_id):
                              single_page_session_id=session.single_page_session_id)
 
     db.session.add(n)
+    MessagingGateway.publish(n)
     db.session.commit()
     return make_response("CREATED", 201)
 
