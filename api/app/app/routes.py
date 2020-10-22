@@ -203,7 +203,7 @@ def list_netflix_watches_for_user(extension_id):
 
 @app.route("/users", methods=['GET'])
 def list_users():
-    guard_ip(request.remote_addr)
+    guard_ip(get_ip_address(request))
     q = db.session.query(User, UserMetaData).filter(User.id == UserMetaData.user_id)
     for key in request.args:
         q = q.filter(UserMetaData.key == key).filter(UserMetaData.value == request.args.get(key))
@@ -248,7 +248,7 @@ def add_netflix_suggest_log(extension_id):
     guard_log_consent(u)
     payload = request.get_json()
 
-    n = NetflixSuggestMetadata(ip=request.remote_addr, user=u, list_id=payload.get("list_id", None),
+    n = NetflixSuggestMetadata(ip=get_ip_address(request), user=u, list_id=payload.get("list_id", None),
                                location=payload.get("location", None),
                                rank=payload.get("rank", None), request_id=payload.get("request_id", None),
                                row=payload.get("row", None), track_id=payload.get("track_id", None),
@@ -279,7 +279,7 @@ def add_netflix_lolomo_log(extension_id):
     payload = request.get_json()
     single_page_session_id = payload.get("single_page_session_id")
 
-    n = Lolomo(ip=request.remote_addr, user=u,
+    n = Lolomo(ip=get_ip_address(request), user=u,
                rank=payload.get("rank", None),
                type=payload.get("type", None),
                associated_content=payload.get("associated_content", None),
@@ -327,7 +327,7 @@ def add_netflix_watch_log(extension_id, video_id):
                              list_id=payload.get("list_id", None),
                              request_id=payload.get("request_id", None),
                              lolomo_id=payload.get("lolomo_id", None),
-                             ip=request.remote_addr,
+                             ip=get_ip_address(request),
                              user=u,
                              single_page_session_id=session.single_page_session_id)
 
@@ -336,9 +336,13 @@ def add_netflix_watch_log(extension_id, video_id):
     return make_response("CREATED", 201)
 
 
+def get_ip_address(a_request):
+    return a_request.headers.get("X-Forwarded-For", request.remote_addr)
+
+
 @app.route("/<extension_id>", methods=['DELETE'])
 def del_logs(extension_id):
-    guard_ip(request.remote_addr)
+    guard_ip(get_ip_address(request))
     u = db.session.query(User).filter_by(extension_id=extension_id).first()
     db.session.delete(u)
     db.session.commit()
@@ -347,7 +351,7 @@ def del_logs(extension_id):
 
 @app.route("/<extension_id>/netflix/logs", methods=['DELETE'])
 def del_netflix_logs(extension_id):
-    guard_ip(request.remote_addr)
+    guard_ip(get_ip_address(request))
     qs = db.session.query(User, StreamLog) \
         .filter(User.extension_id == extension_id) \
         .filter(StreamLog.user_id == User.id) \
@@ -364,7 +368,7 @@ def del_netflix_logs(extension_id):
 
 @app.route("/<extension_id>/netflix/lolomos", methods=['DELETE'])
 def del_netflix_lolomos(extension_id):
-    guard_ip(request.remote_addr)
+    guard_ip(get_ip_address(request))
     qs = db.session.query(User, Lolomo) \
         .filter(User.extension_id == extension_id) \
         .filter(Lolomo.user_id == User.id) \
@@ -381,7 +385,7 @@ def del_netflix_lolomos(extension_id):
 
 @app.route("/", methods=['DELETE'])
 def del_users():
-    guard_ip(request.remote_addr)
+    guard_ip(get_ip_address(request))
     for u in db.session.query(User).all():
         db.session.delete(u)
     db.session.commit()
@@ -395,7 +399,7 @@ def add_log_for_user(extension_id, content_id):
         logging.error(f"Unknown User {extension_id} tried to log data")
         return make_response("NO SUCH extension_id REGISTERED", 404)
     guard_log_consent(u)
-    s = StreamLog(content_id=content_id, ip=request.remote_addr, user=u)
+    s = StreamLog(content_id=content_id, ip=get_ip_address(request), user=u)
     db.session.add(s)
     db.session.commit()
     return make_response("CREATED {} {}".format(s.content_id, u.extension_id), 201)
@@ -425,7 +429,7 @@ def set_robot_plugin_hack():
 
 @app.route("/prune_empty_users", methods=["DELETE"])
 def prune_empty_users():
-    guard_ip(request.remote_addr)
+    guard_ip(get_ip_address(request))
     users = db.session.query(User).all()
     for u in users:
         if len(u.suggestions) == 0:
