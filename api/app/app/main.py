@@ -25,5 +25,7 @@ toolbar = DebugToolbarExtension(app)
 ProxyFix(app.wsgi_app, x_for=1, x_host=1)
 execution_context = os.environ.get("EXECUTION_CONTEXT", "conso-api;api")
 execution_contexts = execution_context.split(";")
-from app.routes import *
-from app.dataviz_api import *
+if "conso-api" in execution_contexts:
+	from app.routes import *
+if "api" in execution_contexts:
+	from app.dataviz_api import *
