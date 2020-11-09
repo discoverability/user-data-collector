@@ -29,3 +29,4 @@ if "conso-api" in execution_contexts:
 	from app.routes import *
 if "api" in execution_contexts:
 	from app.dataviz_api import *
+	from app.datavis_custom import *
