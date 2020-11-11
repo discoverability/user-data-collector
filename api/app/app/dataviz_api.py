@@ -78,6 +78,8 @@ def api_root():
                         "href": get_api_root() + "api/thumbnails/latest"},
                        {"rel": "latest-users",
                         "href": get_api_root() + "api/users/latest"},
+                       {"rel": "custom",
+                        "href": get_api_root() + "api/custom"},
                        {"rel": "stats",
                         "href": get_api_root() + "api/stats"}
                        ]}
@@ -108,16 +110,13 @@ def get_latest_users(limit):
     return json.dumps(res, cls=SetEncoder), 200, {'Content-Type': 'application/json'}
 
 
-
-
-
 @api.route("/api/thumbnails/latest", methods=['GET'])
 @cache.memoize(timeout=3600)
 @query_args(limit=20, since="today")
 def get_latest_logs(limit, since):
     since_date = dateparser.parse(since)
     logs = db.session.query(NetflixSuggestMetadata).filter(
-        NetflixSuggestMetadata.timestamp > since_date.timestamp()).order_by(
+        NetflixSuggestMetadata.timestamp >= since_date.timestamp()).order_by(
         NetflixSuggestMetadata.timestamp.desc())
     if limit != -1:
         logs = logs.limit(limit)
@@ -145,9 +144,15 @@ def get_latest_logs(limit, since):
 
 @api.route("/api/watches/latest", methods=['GET'])
 @cache.memoize(timeout=3600)
-@query_args(limit=20)
-def get_latest_watches(limit):
-    watches = db.session.query(NetflixWatchMetadata).order_by(NetflixWatchMetadata.timestamp.desc()).limit(limit)
+@query_args(limit=20, since="last week")
+def get_latest_watches(limit, since):
+    since_date = dateparser.parse(since)
+    watches = db.session.query(NetflixWatchMetadata) \
+        .filter(NetflixWatchMetadata.timestamp >= since_date) \
+        .order_by(NetflixWatchMetadata.timestamp.desc())
+
+    if limit != -1:
+        watches = watches.limit(limit)
 
     res = [
         {"video_id": w.video_id,
