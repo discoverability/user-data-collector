@@ -498,6 +498,9 @@ def get_sessions_for_user(user_id):
         ]}} for lolomo in lolomos]
 
     res = sorted(res, key=lambda x: -list(x.items())[0][1]["creation_date"])
+    for x in res:
+        list(x.items())[0][1].update({"session_id":list(x.items())[0][0]})
+    res=[list(x.values())[0] for x in res]
     return json.dumps(res), 200, {'Content-Type': 'application/json'}
 
 
