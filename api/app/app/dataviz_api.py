@@ -481,7 +481,7 @@ def get_sessions_for_user(user_id):
         User.id == Lolomo.user_id).filter(
         User.extension_id == user_id).group_by(Lolomo.single_page_session_id).all()
 
-    res = {lolomo[0]: {"creation_date": lolomo[1].timestamp(),
+    res = [{lolomo[0]: {"creation_date": lolomo[1].timestamp(),
                        "creation_date_human": str(lolomo[1]), "links": [
             {
                 "rel": "thumbnails",
@@ -495,7 +495,9 @@ def get_sessions_for_user(user_id):
                 "rel": "lolomos",
                 "href": get_api_root() + f"api/user/{user_id}/session/{lolomo[0]}/lolomos"
             }
-        ]} for lolomo in lolomos}
+        ]}} for lolomo in lolomos]
+
+    res = sorted(res, key=lambda x: -list(x.items())[0][1]["creation_date"])
     return json.dumps(res), 200, {'Content-Type': 'application/json'}
 
 
