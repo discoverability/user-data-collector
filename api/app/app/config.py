@@ -20,7 +20,7 @@ class ProdConfig(object):
     DEVELOPMENT = False
     DEBUG = False  # some Flask specific configs
     SECRET_KEY = 'EMNS2606!'
-    SQLALCHEMY_ECHO = False
+    SQLALCHEMY_ECHO = True
 
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SQLALCHEMY_ENGINE_OPTIONS = {"pool_size": 100, "max_overflow": 100, "pool_recycle": 280}
@@ -33,7 +33,7 @@ class ProdConfig(object):
 
 env = os.environ.get("APP_ENV", "development")
 print("[CONSO-API] environment : %s" % env)
-if (env == "production"):
+if env == "production":
     config = ProdConfig()
 else:
     config = DevConfig()

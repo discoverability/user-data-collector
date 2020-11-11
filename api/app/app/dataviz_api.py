@@ -1,15 +1,16 @@
 import os
 import json
-import struct, ctypes
 from datetime import datetime, timedelta
-
+import dateparser
 from anonymizeip import anonymize_ip
 from sqlalchemy import func
-from flask import request, make_response, abort, redirect, url_for
+from flask import request, abort, redirect
 from app.main import app as api, db, cache
 from app.models import User, NetflixSuggestMetadata, NetflixWatchMetadata, Lolomo
 
 from functools import wraps
+
+from app.set_encoder import SetEncoder
 
 is_callable = lambda o: hasattr(o, '__call__')
 
@@ -55,13 +56,6 @@ def args_from_request(to_extract, provided_args, provided_kwargs):
     return provided_args, results
 
 
-class SetEncoder(json.JSONEncoder):
-    def default(self, obj):
-        if isinstance(obj, set):
-            return list(obj)
-        return json.JSONEncoder.default(self, obj)
-
-
 @api.route("/", methods=['GET'])
 def server_root():
     return redirect(get_api_root() + "api")
@@ -84,6 +78,8 @@ def api_root():
                         "href": get_api_root() + "api/thumbnails/latest"},
                        {"rel": "latest-users",
                         "href": get_api_root() + "api/users/latest"},
+                       {"rel": "custom",
+                        "href": get_api_root() + "api/custom"},
                        {"rel": "stats",
                         "href": get_api_root() + "api/stats"}
                        ]}
@@ -116,9 +112,14 @@ def get_latest_users(limit):
 
 @api.route("/api/thumbnails/latest", methods=['GET'])
 @cache.memoize(timeout=3600)
-@query_args(limit=20)
-def get_latest_logs(limit):
-    logs = db.session.query(NetflixSuggestMetadata).order_by(NetflixSuggestMetadata.timestamp.desc()).limit(limit)
+@query_args(limit=20, since="today")
+def get_latest_logs(limit, since):
+    since_date = dateparser.parse(since)
+    logs = db.session.query(NetflixSuggestMetadata).filter(
+        NetflixSuggestMetadata.timestamp >= since_date.timestamp()).order_by(
+        NetflixSuggestMetadata.timestamp.desc())
+    if limit != -1:
+        logs = logs.limit(limit)
 
     res = [
         {
@@ -143,9 +144,15 @@ def get_latest_logs(limit):
 
 @api.route("/api/watches/latest", methods=['GET'])
 @cache.memoize(timeout=3600)
-@query_args(limit=20)
-def get_latest_watches(limit):
-    watches = db.session.query(NetflixWatchMetadata).order_by(NetflixWatchMetadata.timestamp.desc()).limit(limit)
+@query_args(limit=20, since="last week")
+def get_latest_watches(limit, since):
+    since_date = dateparser.parse(since)
+    watches = db.session.query(NetflixWatchMetadata) \
+        .filter(NetflixWatchMetadata.timestamp >= since_date) \
+        .order_by(NetflixWatchMetadata.timestamp.desc())
+
+    if limit != -1:
+        watches = watches.limit(limit)
 
     res = [
         {"video_id": w.video_id,
