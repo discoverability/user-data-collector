@@ -27,6 +27,10 @@ clean:
 
 build: build-api build-model
 
+docker-testing:
+	docker build . -t discoverability/conso-api:testing
+	docker push discoverability/conso-api:testing
+
 docker:
 	docker build . -t discoverability/conso-api 
 docker-run:

@@ -9,7 +9,7 @@ class DevConfig(object):
     DEVELOPMENT = True
     DEBUG = True
     SECRET_KEY = 'EMNS2606!'
-    SQLALCHEMY_RECORD_QUERIES = True
+    SQLALCHEMY_RECORD_QUERIES = False
     SQLALCHEMY_ECHO = True
     CACHE_TYPE = "simple"  # Flask-Caching related configs
 
