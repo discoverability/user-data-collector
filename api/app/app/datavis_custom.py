@@ -57,36 +57,38 @@ def get_latest_watches_alias1(*args, **kwargs):
 
 @documented_route("/api/custom/watches/latest/monthly", methods=['GET'], documentation_name="watches-from-last-month")
 def get_latest_watches_alias2(*args, **kwargs):
-    return redirect(get_api_root() + "api/watches/latest?since=last+month&limit=-1")
+    return redirect(get_api_root() + "api/watches/latest?date_from=last+month&limit=-1")
 
 
 @documented_route("/api/custom/watches/tops/forever", methods=['GET'], documentation_name="watches-tops-forever")
 def get_tops_forever(*args, **kwargs):
-    return redirect(get_api_root() + "api/custom/watches/tops?since=1900")
+    return redirect(get_api_root() + "api/custom/watches/tops?date_from=1900")
+
 
 @documented_route("/api/custom/watches/tops/last-week", methods=['GET'], documentation_name="watches-tops-last-week")
 def get_tops_last_week(*args, **kwargs):
-    return redirect(get_api_root() + "api/custom/watches/tops?since=last+week")
+    return redirect(get_api_root() + "api/custom/watches/tops?date_from=last+week")
 
 
 @documented_route("/api/custom/watches/tops/last-month", methods=['GET'], documentation_name="watches-tops-last-month")
 def get_tops_last_month(*args, **kwargs):
-    return redirect(get_api_root() + "api/custom/watches/tops?since=last+month")
+    return redirect(get_api_root() + "api/custom/watches/tops?date_from=last+month")
 
 
 @api.route("/api/custom/watches/tops", methods=['GET'])
-@query_args(since="last week")
-def get_tops(since):
-    since_date = dateparser.parse(since)
+@query_args(date_from="last week", date_to="now")
+def get_tops(date_from, date_to):
+    from_date = dateparser.parse(date_from)
+    to_date = dateparser.parse(date_to)
     watches = db.session.query(NetflixWatchMetadata.video_id, func.count(NetflixWatchMetadata.id)) \
-        .filter(NetflixWatchMetadata.timestamp >= since_date) \
+        .filter(NetflixWatchMetadata.timestamp >= from_date) \
+        .filter(NetflixWatchMetadata.timestamp <= to_date) \
         .group_by(NetflixWatchMetadata.video_id) \
         .order_by(func.count(NetflixWatchMetadata.id).desc()).all()
 
-    res=[{"video_id": video_id, "count": count, "links": {
+    res = [{"video_id": video_id, "count": count, "links": {
         "rel": "content",
         "href": f"https://platform-api.vod-prime.space/api/emns/provider/4/identifier/{video_id}"
     }} for video_id, count in watches]
 
     return json.dumps(res, cls=SetEncoder), 200, {'Content-Type': 'application/json'}
-
