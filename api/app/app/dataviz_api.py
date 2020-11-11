@@ -209,26 +209,24 @@ def get_dataviz_users():
                     creation_date = creation_date[0]
 
                 session_data["creation_date"] = creation_date.timestamp()
+                session_data["creation_date_human"] = str(creation_date)
 
-                link_data = {}
-                link_data["name"] = "thumbnails"
-                link_data["href"] = get_api_root() + "api/user/%s/session/%s/thumbnails" % (u.extension_id, l)
+                link_data = {"name": "thumbnails",
+                             "href": get_api_root() + "api/user/%s/session/%s/thumbnails" % (u.extension_id, l)}
 
-                session_link = {}
-                session_link["name"] = "session"
-                session_link["href"] = get_api_root() + "api/user/%s/session/%s" % (u.extension_id, l)
+                session_link = {"name": "session",
+                                "href": get_api_root() + "api/user/%s/session/%s" % (u.extension_id, l)}
 
-                watch_link = {}
-                watch_link["name"] = "watches"
-                watch_link["href"] = get_api_root() + "api/user/%s/session/%s/watches" % (u.extension_id, l)
+                watch_link = {"name": "watches",
+                              "href": get_api_root() + "api/user/%s/session/%s/watches" % (u.extension_id, l)}
 
-                lolomo_link = {}
-                lolomo_link["name"] = "lolomos"
-                lolomo_link["href"] = get_api_root() + "api/user/%s/session/%s/lolomos" % (u.extension_id, l)
+                lolomo_link = {"name": "lolomos",
+                               "href": get_api_root() + "api/user/%s/session/%s/lolomos" % (u.extension_id, l)}
 
                 session_data["links"] = [link_data, watch_link, lolomo_link, session_link]
                 user_data["sessions"].append(session_data)
         if len(user_data["sessions"]) > 0:
+            sorted(user_data["sessions"],key= lambda x: -x["creation_date"])
             res.append(user_data)
 
     return json.dumps(res, cls=SetEncoder), 200, {'Content-Type': 'application/json'}
@@ -482,7 +480,7 @@ def get_sessions_for_user(user_id):
         User.extension_id == user_id).group_by(Lolomo.single_page_session_id).all()
 
     res = [{lolomo[0]: {"creation_date": lolomo[1].timestamp(),
-                       "creation_date_human": str(lolomo[1]), "links": [
+                        "creation_date_human": str(lolomo[1]), "links": [
             {
                 "rel": "thumbnails",
                 "href": get_api_root() + f"api/user/{user_id}/session/{lolomo[0]}/thumbnails"
@@ -499,8 +497,8 @@ def get_sessions_for_user(user_id):
 
     res = sorted(res, key=lambda x: -list(x.items())[0][1]["creation_date"])
     for x in res:
-        list(x.items())[0][1].update({"session_id":list(x.items())[0][0]})
-    res=[list(x.values())[0] for x in res]
+        list(x.items())[0][1].update({"session_id": list(x.items())[0][0]})
+    res = [list(x.values())[0] for x in res]
     return json.dumps(res), 200, {'Content-Type': 'application/json'}
 
 
