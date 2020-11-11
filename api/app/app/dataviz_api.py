@@ -119,8 +119,8 @@ def get_latest_users(limit):
 
 
 @api.route("/api/thumbnails/latest", methods=['GET'])
-@cache.memoize(timeout=3600)
 @query_args(limit=9999, date_from="last week", date_to="now")
+@cache.memoize(timeout=3600)
 def get_latest_logs(limit, date_from, date_to):
     from_date = dateparser.parse(date_from)
     to_date = dateparser.parse(date_to)
@@ -153,8 +153,8 @@ def get_latest_logs(limit, date_from, date_to):
 
 
 @api.route("/api/watches/latest", methods=['GET'])
-@cache.memoize(timeout=3600)
 @query_args(limit=9999, date_from="last week", date_to="now")
+@cache.memoize(timeout=3600)
 def get_latest_watches(limit, date_from, date_to):
     from_date = dateparser.parse(date_from)
     to_date = dateparser.parse(date_to)
