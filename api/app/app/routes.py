@@ -308,17 +308,31 @@ def get_session(single_page_session_id):
     return session
 
 
-@app.route("/<extension_id>/netflix/watch/<video_id>", methods=['POST'])
-def add_netflix_watch_log(extension_id, video_id):
+@app.route("/<user_id>/session/<session_id>/netflix/watch/<video_id>/end", methods=['POST'])
+def add_netflix_watch_stop_log(user_id, session_id, video_id):
+    w = db.session.query(NetflixWatchMetadata).join(User).join(Session) \
+        .filter(User.extension_id == user_id) \
+        .filter(Session.single_page_session_id == session_id) \
+        .filter(NetflixWatchMetadata.video_id == video_id).first()
+
+
+    if w:
+        guard_watch_consent(w.user)
+        w.stop_time = datetime.datetime.now()
+        db.session.commit()
+        return make_response(f"video {video_id} stop date updated",201)
+    return abort(404)
+
+
+@app.route("/<extension_id>/session/<session_id>/netflix/watch/<video_id>", methods=['POST'])
+def add_netflix_watch_log2(extension_id, session_id,video_id):
     u = db.session.query(User).filter_by(extension_id=extension_id).first()
     if u is None:
         return make_response("NO SUCH extension_id REGISTERED", 404)
 
     guard_watch_consent(u)
     payload = request.get_json()
-
-    session = get_session(
-        payload.get("single_page_session_id"))
+    session = get_session(session_id)
 
     n = NetflixWatchMetadata(video_id=video_id,
                              track_id=payload.get("track_id"),
@@ -334,6 +348,13 @@ def add_netflix_watch_log(extension_id, video_id):
     db.session.add(n)
     db.session.commit()
     return make_response("CREATED", 201)
+
+#deprecated
+@app.route("/<extension_id>/netflix/watch/<video_id>", methods=['POST'])
+def add_netflix_watch_log(extension_id, video_id):
+    payload = request.get_json()
+    single_page_session_id = payload.get("single_page_session_id")
+    return add_netflix_watch_log2(extension_id,single_page_session_id,video_id)
 
 
 def get_ip_address(a_request):

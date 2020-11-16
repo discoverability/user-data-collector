@@ -129,5 +129,5 @@ class NetflixWatchMetadata(StreamLog):
 
     user = db.relationship("User", back_populates="watches")
     session = db.relationship("Session", back_populates="watches", cascade="save-update")
-
+    stop_time = db.Column(db.DateTime, default=None, nullable=True)
     __mapper_args__ = {"polymorphic_identity": "watch"}
