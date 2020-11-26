@@ -171,7 +171,7 @@ def get_latest_watches(limit, date_from, date_to):
         {"video_id": w.video_id,
          "timestamp": w.timestamp.timestamp(),
          "timestamp_human": str(w.timestamp),
-         "duration_seconds": (w.stop_time-w.timestamp).seconds if w.stop_time else "unknown",
+         "duration_seconds": (w.stop_time - w.timestamp).seconds if w.stop_time else "unknown",
          "track_id": w.track_id,
          "pseudo_ip": anonymize_ip(w.ip),
 
@@ -227,7 +227,7 @@ def get_dataviz_users():
                 session_data["links"] = [link_data, watch_link, lolomo_link, session_link]
                 user_data["sessions"].append(session_data)
         if len(user_data["sessions"]) > 0:
-            sorted(user_data["sessions"],key= lambda x: -x["creation_date"])
+            sorted(user_data["sessions"], key=lambda x: -x["creation_date"])
             res.append(user_data)
 
     return json.dumps(res, cls=SetEncoder), 200, {'Content-Type': 'application/json'}
@@ -382,7 +382,7 @@ def get_user_watch(user_id):
         "request_id": watch.request_id,
         "timestamp": watch.timestamp.timestamp(),
         "timestamp_human": str(watch.timestamp),
-        "duration_seconds": (watch.stop_time-watch.timestamp).seconds if watch.stop_time else "unknown",
+        "duration_seconds": (watch.stop_time - watch.timestamp).seconds if watch.stop_time else "unknown",
         "row": watch.row,
         "rank": watch.rank,
         "lolomo_info": [
@@ -405,27 +405,29 @@ def get_user_watch_for_session(user_id, session_id):
                 .filter(NetflixWatchMetadata.single_page_session_id == session_id)
                 .order_by(NetflixSuggestMetadata.timestamp)
                 .all())
-
-    min_timestamp = suggests[0][1].timestamp
-    max_timestamp = suggests[-1][1].timestamp
-
-    suggests = (db.session.query(User, NetflixSuggestMetadata).order_by(NetflixSuggestMetadata.timestamp)
-                .filter(User.id == NetflixSuggestMetadata.user_id)
-                .filter(User.extension_id == user_id)
-                .filter(NetflixSuggestMetadata.timestamp > max_timestamp)
-                .order_by(NetflixSuggestMetadata.timestamp)
-                .all())
-
-    watches = db.session.query(User, NetflixWatchMetadata) \
-        .filter(User.id == NetflixWatchMetadata.user_id) \
-        .filter(User.extension_id == user_id) \
-        .filter(NetflixWatchMetadata.timestamp >= min_timestamp)
-
     if len(suggests) > 0:
-        next_timestamp = suggests[0][1].timestamp
-        watches = watches.filter(NetflixWatchMetadata.timestamp < next_timestamp)
+        min_timestamp = suggests[0][1].timestamp
+        max_timestamp = suggests[-1][1].timestamp
 
-    watches = watches.all()
+        suggests = (db.session.query(User, NetflixSuggestMetadata).order_by(NetflixSuggestMetadata.timestamp)
+                    .filter(User.id == NetflixSuggestMetadata.user_id)
+                    .filter(User.extension_id == user_id)
+                    .filter(NetflixSuggestMetadata.timestamp > max_timestamp)
+                    .order_by(NetflixSuggestMetadata.timestamp)
+                    .all())
+
+        watches = db.session.query(User, NetflixWatchMetadata) \
+            .filter(User.id == NetflixWatchMetadata.user_id) \
+            .filter(User.extension_id == user_id) \
+            .filter(NetflixWatchMetadata.timestamp >= min_timestamp)
+
+        if len(suggests) > 0:
+            next_timestamp = suggests[0][1].timestamp
+            watches = watches.filter(NetflixWatchMetadata.timestamp < next_timestamp)
+
+        watches = watches.all()
+    else:
+        watches = []
 
     data = get_watches_data(session_id, user_id, watches)
 
@@ -435,7 +437,8 @@ def get_user_watch_for_session(user_id, session_id):
 def get_watches_data(session_id, user_id, watches):
     return {
         "watches": {watch.video_id: {"timestamp": watch.timestamp.timestamp(), "timestamp_human": str(watch.timestamp),
-                                     "duration_seconds": (watch.stop_time - watch.timestamp).seconds if watch.stop_time else "unknown",
+                                     "duration_seconds": (
+                                                 watch.stop_time - watch.timestamp).seconds if watch.stop_time else "unknown",
                                      "row": watch.row, "rank": watch.rank}
                     for user, watch in watches},
         "links": [
