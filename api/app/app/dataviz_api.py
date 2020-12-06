@@ -8,8 +8,8 @@ from flask import request, abort, redirect
 from app.main import app as api, db, cache
 from app.models import User, NetflixSuggestMetadata, NetflixWatchMetadata, Lolomo
 
-from functools import wraps
-
+from functools import wraps, reduce
+import collections
 from app.set_encoder import SetEncoder
 
 is_callable = lambda o: hasattr(o, '__call__')
@@ -53,6 +53,7 @@ def args_from_request(to_extract, provided_args, provided_kwargs):
                     results[arg["key"]] = type(arg["value"])(extracted_value)
         except ValueError:
             return abort(404, f" {arg['key']} argument should be {type(arg['value']).__name__}")
+    results.update(provided_kwargs)
     return provided_args, results
 
 
@@ -86,6 +87,8 @@ def api_root():
 
                        {"rel": "latest-users",
                         "href": get_api_root() + "api/users/latest"},
+                       {"rel": "netflix",
+                        "href": get_api_root() + "api/netflix"},
                        {"rel": "custom",
                         "href": get_api_root() + "api/custom"},
                        {"rel": "stats",
@@ -145,7 +148,8 @@ def get_latest_logs(limit, date_from, date_to):
                  "href": get_api_root() + f"api/user/{log.user.extension_id}/session/{log.single_page_session_id}"},
                 {"rel": "user", "href": get_api_root() + f"api/user/{log.user.extension_id}"},
                 {"rel": "content",
-                 "href": f"https://platform-api.vod-prime.space/api/emns/provider/4/identifier/{log.video_id}", }
+                 "href": f"https://platform-api.vod-prime.space/api/emns/provider/4/identifier/{log.video_id}", },
+                {"rel": "netflix-thumbnail", "href": get_api_root() + f"api/netflix/thumbnail/{log.video_id}"}
             ]
         } for
         log in logs]
@@ -254,7 +258,7 @@ def get_thumbnails_data(user_id, session_id):
             .filter(NetflixWatchMetadata.single_page_session_id == session_id)
             .all())
 
-    data["thumbnails"] = extract_thumbnails_data(suggests)
+    data["thumbnails"] = extract_thumbnails_data(suggests, user_id)
     data["links"] = get_user_links(user_id) + get_sessions_links(user_id, session_id)
     return json.dumps(data), 200, {'Content-Type': 'application/json'}
 
@@ -274,7 +278,8 @@ def get_thumnails_for_lolomo(user_id, lolomo_id):
             .all())
 
     data["lolomo_info"] = extract_lolomo_data([db.session.query(Lolomo).get(lolomo_id)])[0]
-    data["thumbnails"] = extract_thumbnails_data(sorted(set(suggests), key=lambda x: x.rank), include_lolomo=False)
+    data["thumbnails"] = extract_thumbnails_data(sorted(set(suggests), key=lambda x: x.rank), User.extension_id,
+                                                 include_lolomo=False)
     data["links"] = get_user_links(user_id)
     return json.dumps(data), 200, {'Content-Type': 'application/json'}
 
@@ -310,7 +315,7 @@ def get_lolomo_data(user_id, session_id):
     return json.dumps(data), 200, {'Content-Type': 'application/json'}
 
 
-def extract_thumbnails_data(suggests, include_lolomo=True):
+def extract_thumbnails_data(suggests, extension_id, include_lolomo=True):
     thumbnails_data = []
     for log in suggests:
         row = log.row
@@ -322,7 +327,12 @@ def extract_thumbnails_data(suggests, include_lolomo=True):
         item = {"row": row, "col": rank, "video_id": video_id, "track_id": track_id, "timestamp": timestamp.timestamp(),
                 "timestamp_human": str(timestamp), "links": [
                 {"rel": "content",
-                 "href": f"https://platform-api.vod-prime.space/api/emns/provider/4/identifier/{video_id}"}]}
+                 "href": f"https://platform-api.vod-prime.space/api/emns/provider/4/identifier/{video_id}"
+                 },
+                {"ref": "netflix-recommended-thumbnails-for-user",
+                 "href": get_api_root() + f"api/netflix/thumbnail/{video_id}/user/{extension_id}"
+                 }
+            ]}
         if include_lolomo:
             lolomo_info = [
                 {"type": l.type, "content": l.associated_content, "desc": l.full_text_description, "row": l.rank}
@@ -349,7 +359,7 @@ def get_user_thumbnails(user_id):
             .filter(User.extension_id == user_id)
             .all())
 
-    data["thumbnails"] = extract_thumbnails_data(suggests)
+    data["thumbnails"] = extract_thumbnails_data(suggests,user_id)
     data["links"] = get_user_links(user_id)
     return json.dumps(data), 200, {'Content-Type': 'application/json'}
 
@@ -607,13 +617,112 @@ def get_stats_dataviz(delta):
     return res
 
 
+def user_link(user_id):
+    return {
+        "rel": "user",
+        "href": get_api_root() + f"api/user/{user_id}"
+    }
+
+
+def session_link(user_id, session_id):
+    return {
+        "rel": "session",
+        "href": get_api_root() + f"api/user/{user_id}/session/{session_id}"
+    }
+
+
+def content_link(video_id):
+    return {"rel": "content",
+            "href": f"https://platform-api.vod-prime.space/api/emns/provider/4/identifier/{video_id}", }
+
+
+@api.route("/api/netflix")
+def get_netflix_root_api():
+    links = {"links": {"rel": "netflix-thumbnails",
+                       "href": get_api_root() + "api/netflix/thumbnails",
+                       "doc": """returns the list of content suggested by netflix, to which users, when and where, optionally for a particular video_id on a given time period using date_from and date_to query params""",
+                       "examples": [
+                           get_api_root() + "api/netflix/thumbnails?limit=9999&date_from=2020/10/01&date_to=now",
+                           get_api_root() + "api/netflix/thumbnails?video_id=562050&limit=9999&date_from=2020/10/01&date_to=2020/10/31"
+
+                       ]}}
+    return json.dumps(links, cls=SetEncoder), 200, {'Content-Type': 'application/json'}
+
+
 @api.route("/api/netflix/thumbnails")
-@query_args(limit=9999, date_from="last week", date_to="now")
+@query_args(limit=9999, date_from="1900/01/01", date_to="now")
 def get_netflix_thumbnails(limit, date_from, date_to):
-    pass
+    from_date = dateparser.parse(date_from)
+    to_date = dateparser.parse(date_to)
+    logs = db.session.query(NetflixSuggestMetadata.video_id, func.count()).filter(
+        NetflixSuggestMetadata.timestamp >= from_date) \
+        .filter(NetflixSuggestMetadata.timestamp <= to_date) \
+        .order_by(NetflixSuggestMetadata.video_id.asc()).group_by(NetflixSuggestMetadata.video_id).limit(limit)
+    res = {video_id: {"count": count, "links": {"rel": "netflix-thumbnails-details",
+                                                "href": get_api_root() + f"api/netflix/thumbnail/{video_id}"}} for
+           video_id, count in logs}
+    return json.dumps(res), 200, {'Content-Type': 'application/json'}
+
+
+@api.route("/api/netflix/thumbnails_all")
+@query_args(limit=9999, date_from="1900/01/01", date_to="now")
+def get_netflix_thumbnails_all(limit, date_from, date_to):
+    from_date = dateparser.parse(date_from)
+    to_date = dateparser.parse(date_to)
+    logs = db.session.query(NetflixSuggestMetadata.video_id, func.count(), NetflixSuggestMetadata.timestamp,
+                            User.extension_id, NetflixSuggestMetadata.single_page_session_id,
+                            NetflixSuggestMetadata.row, NetflixSuggestMetadata.rank).join(User).filter(
+        NetflixSuggestMetadata.timestamp >= from_date) \
+        .filter(NetflixSuggestMetadata.timestamp <= to_date) \
+        .order_by(NetflixSuggestMetadata.video_id.asc(), NetflixSuggestMetadata.timestamp.desc()).limit(limit)
+
+    return api_netflix_thumbnails_logs_to_json(logs)
+
+
+def api_netflix_thumbnails_logs_to_json(logs):
+    data = collections.defaultdict(list)
+    for log in logs:
+        data_items = {"timestamp": log[1].timestamp(), "timestamp_human": str(log[1]), "user": log[2],
+                      "session_id": log[3], "row": log[4], "rank": log[5],
+                      "links": [user_link(log[2]), session_link(log[2], log[3]), content_link(log[0])]}
+        data[log[0]].append({"id": str(data_items), "values": data_items})
+    di = {}
+    for k, v in data.items():
+        items = {}
+        for V in v:
+            items[V["id"]] = V["values"]
+        di[k] = list(items.values())
+    return json.dumps(di), 200, {'Content-Type': 'application/json'}
 
 
 @api.route("/api/netflix/thumbnail/<video_id>")
-@query_args(limit=9999, date_from="last week", date_to="now")
-def get_netflix_thumbnail_by_videoid(video_id, limit, date_from, date_to):
-    pass
+@query_args(limit=9999, date_from="1900/01/01", date_to="now")
+def get_netflix_thumbnail_by_video_id(video_id, limit, date_from, date_to):
+    from_date = dateparser.parse(date_from)
+    to_date = dateparser.parse(date_to)
+    logs = db.session.query(NetflixSuggestMetadata.video_id, NetflixSuggestMetadata.timestamp,
+                            User.extension_id, NetflixSuggestMetadata.single_page_session_id,
+                            NetflixSuggestMetadata.row, NetflixSuggestMetadata.rank).join(User).filter(
+        NetflixSuggestMetadata.timestamp >= from_date) \
+        .filter(NetflixSuggestMetadata.timestamp <= to_date) \
+        .filter(NetflixSuggestMetadata.video_id == int(video_id)) \
+        .order_by(NetflixSuggestMetadata.video_id.asc(), NetflixSuggestMetadata.timestamp.desc()).limit(limit)
+
+    return api_netflix_thumbnails_logs_to_json(logs)
+
+
+@api.route("/api/netflix/thumbnail/<video_id>/user/<user_id>")
+@query_args(limit=9999, date_from="1900/01/01", date_to="now")
+def get_netflix_thumbnail_by_video_id_by_user_id(video_id, user_id, limit, date_from, date_to):
+    from_date = dateparser.parse(date_from)
+    to_date = dateparser.parse(date_to)
+    logs = db.session.query(NetflixSuggestMetadata.video_id, NetflixSuggestMetadata.timestamp,
+                            User.extension_id, NetflixSuggestMetadata.single_page_session_id,
+                            NetflixSuggestMetadata.row, NetflixSuggestMetadata.rank).join(User).filter(
+        NetflixSuggestMetadata.timestamp >= from_date) \
+        .filter(NetflixSuggestMetadata.timestamp <= to_date) \
+        .filter(NetflixSuggestMetadata.video_id == int(video_id)) \
+        .filter(User.extension_id == user_id) \
+        .order_by(NetflixSuggestMetadata.video_id.asc(), NetflixSuggestMetadata.timestamp.desc()).limit(limit)
+
+    return api_netflix_thumbnails_logs_to_json(logs)
