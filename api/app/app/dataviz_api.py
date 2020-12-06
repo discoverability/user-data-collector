@@ -438,7 +438,7 @@ def get_watches_data(session_id, user_id, watches):
     return {
         "watches": {watch.video_id: {"timestamp": watch.timestamp.timestamp(), "timestamp_human": str(watch.timestamp),
                                      "duration_seconds": (
-                                                 watch.stop_time - watch.timestamp).seconds if watch.stop_time else "unknown",
+                                             watch.stop_time - watch.timestamp).seconds if watch.stop_time else "unknown",
                                      "row": watch.row, "rank": watch.rank}
                     for user, watch in watches},
         "links": [
@@ -605,3 +605,15 @@ def get_stats_dataviz(delta):
            "avg_thumbnails_per_active_user": len(weekly_new_thumbnails) / len(active_users),
            "avg_watches_per_active_user": len(weekly_new_watches) / len(active_users)}
     return res
+
+
+@api.route("/api/netflix/thumbnails")
+@query_args(limit=9999, date_from="last week", date_to="now")
+def get_netflix_thumbnails(limit, date_from, date_to):
+    pass
+
+
+@api.route("/api/netflix/thumbnail/<video_id>")
+@query_args(limit=9999, date_from="last week", date_to="now")
+def get_netflix_thumbnail_by_videoid(video_id, limit, date_from, date_to):
+    pass
