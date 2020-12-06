@@ -3,7 +3,7 @@ import json
 from datetime import datetime, timedelta
 import dateparser
 from anonymizeip import anonymize_ip
-from sqlalchemy import func
+from sqlalchemy import func, text
 from flask import request, abort, redirect
 from app.main import app as api, db, cache
 from app.models import User, NetflixSuggestMetadata, NetflixWatchMetadata, Lolomo
@@ -359,7 +359,7 @@ def get_user_thumbnails(user_id):
             .filter(User.extension_id == user_id)
             .all())
 
-    data["thumbnails"] = extract_thumbnails_data(suggests,user_id)
+    data["thumbnails"] = extract_thumbnails_data(suggests, user_id)
     data["links"] = get_user_links(user_id)
     return json.dumps(data), 200, {'Content-Type': 'application/json'}
 
@@ -484,7 +484,8 @@ def get_watches_data(session_id, user_id, watches):
 @cache.cached(timeout=10)
 def get_user(user_id):
     user = db.session.query(User).filter(User.extension_id == user_id).first()
-
+    if user is None:
+        return abort(404, f"no such user {user_id}")
     res = get_user_data(user)
     return json.dumps(res), 200, {'Content-Type': 'application/json'}
 
@@ -640,24 +641,31 @@ def content_link(video_id):
 def get_netflix_root_api():
     links = {"links": {"rel": "netflix-thumbnails",
                        "href": get_api_root() + "api/netflix/thumbnails",
-                       "doc": """returns the list of content suggested by netflix, to which users, when and where, optionally for a particular video_id on a given time period using date_from and date_to query params""",
+                       "doc": """returns the list of content suggested by netflix, to which users, when and where, optionally for a particular video_id on a given time period using date_from and date_to query params. Results can be sorted using the sorted_by query param (count or video_id)""",
                        "examples": [
-                           get_api_root() + "api/netflix/thumbnails?limit=9999&date_from=2020/10/01&date_to=now",
-                           get_api_root() + "api/netflix/thumbnails?video_id=562050&limit=9999&date_from=2020/10/01&date_to=2020/10/31"
+                           get_api_root() + "api/netflix/thumbnails?limit=9999&date_from=2020/10/01&date_to=now&sorted_by=count",
+                           get_api_root() + "api/netflix/thumbnails?video_id=562050&limit=9999&date_from=2020/10/01&date_to=2020/10/31&sorted_by=video_id"
 
                        ]}}
     return json.dumps(links, cls=SetEncoder), 200, {'Content-Type': 'application/json'}
 
 
 @api.route("/api/netflix/thumbnails")
-@query_args(limit=9999, date_from="1900/01/01", date_to="now")
-def get_netflix_thumbnails(limit, date_from, date_to):
+@query_args(limit=9999, date_from="1900/01/01", date_to="now", sorted_by="video_id")
+def get_netflix_thumbnails(limit, date_from, date_to, sorted_by):
     from_date = dateparser.parse(date_from)
     to_date = dateparser.parse(date_to)
-    logs = db.session.query(NetflixSuggestMetadata.video_id, func.count()).filter(
+    logs = db.session.query(NetflixSuggestMetadata.video_id,
+                            func.count(NetflixSuggestMetadata.video_id).label("total")).filter(
         NetflixSuggestMetadata.timestamp >= from_date) \
         .filter(NetflixSuggestMetadata.timestamp <= to_date) \
-        .order_by(NetflixSuggestMetadata.video_id.asc()).group_by(NetflixSuggestMetadata.video_id).limit(limit)
+        .group_by(NetflixSuggestMetadata.video_id)
+    if sorted_by == "video_id":
+        logs = logs.order_by(NetflixSuggestMetadata.video_id.asc())
+    elif sorted_by == "count":
+        logs = logs.order_by(text('total DESC'))
+
+    logs = logs.limit(limit)
     res = {video_id: {"count": count, "links": {"rel": "netflix-thumbnails-details",
                                                 "href": get_api_root() + f"api/netflix/thumbnail/{video_id}"}} for
            video_id, count in logs}
@@ -665,16 +673,23 @@ def get_netflix_thumbnails(limit, date_from, date_to):
 
 
 @api.route("/api/netflix/thumbnails_all")
-@query_args(limit=9999, date_from="1900/01/01", date_to="now")
-def get_netflix_thumbnails_all(limit, date_from, date_to):
+@query_args(limit=9999, date_from="1900/01/01", date_to="now", sorted_by="video_id")
+def get_netflix_thumbnails_all(limit, date_from, date_to, sorted_by):
     from_date = dateparser.parse(date_from)
     to_date = dateparser.parse(date_to)
-    logs = db.session.query(NetflixSuggestMetadata.video_id, func.count(), NetflixSuggestMetadata.timestamp,
+    logs = db.session.query(NetflixSuggestMetadata.video_id, func.count(NetflixSuggestMetadata.video_id).label("total"),
+                            NetflixSuggestMetadata.timestamp,
                             User.extension_id, NetflixSuggestMetadata.single_page_session_id,
                             NetflixSuggestMetadata.row, NetflixSuggestMetadata.rank).join(User).filter(
         NetflixSuggestMetadata.timestamp >= from_date) \
         .filter(NetflixSuggestMetadata.timestamp <= to_date) \
-        .order_by(NetflixSuggestMetadata.video_id.asc(), NetflixSuggestMetadata.timestamp.desc()).limit(limit)
+        .group_by(NetflixSuggestMetadata.video_id)
+    if sorted_by == "video_id":
+        logs = logs.order_by(NetflixSuggestMetadata.video_id.asc())
+    elif sorted_by == "count":
+        logs = logs.order_by('total DESC')
+
+    logs = logs.limit(limit)
 
     return api_netflix_thumbnails_logs_to_json(logs)
 
