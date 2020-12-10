@@ -10,7 +10,7 @@ from app.models import User, NetflixSuggestMetadata, NetflixWatchMetadata, Lolom
 
 from functools import wraps, reduce
 import collections
-rom itertools import groupby
+from itertools import groupby
 from operator import attrgetter
 from app.set_encoder import SetEncoder
 
