@@ -6,10 +6,13 @@ from anonymizeip import anonymize_ip
 from sqlalchemy import func, text
 from flask import request, abort, redirect
 from app.main import app as api, db, cache
-from app.models import User, NetflixSuggestMetadata, NetflixWatchMetadata, Lolomo
+from app.models import User, NetflixSuggestMetadata, NetflixWatchMetadata, Lolomo, Session
 
 from functools import wraps, reduce
 import collections
+from itertools import groupby
+from operator import attrgetter
+
 from app.set_encoder import SetEncoder
 
 is_callable = lambda o: hasattr(o, '__call__')
@@ -195,44 +198,44 @@ def get_latest_watches(limit, date_from, date_to):
 @api.route("/api/users", methods=['GET'])
 @cache.cached(timeout=3600)
 def get_dataviz_users():
-    users = db.session.query(User).all()
+    users_data = db.session.query(User.extension_id, User.creation_date,
+                                  func.max(User.creation_date).label("session_date"),
+                                  Session.single_page_session_id).join(
+        NetflixSuggestMetadata, User.id == NetflixSuggestMetadata.user_id) \
+        .join(Session, NetflixSuggestMetadata.single_page_session_id == Session.single_page_session_id) \
+        .group_by(User.extension_id, User.creation_date, Session.single_page_session_id) \
+        .order_by(text("session_date DESC")) \
+        .all()
+
+    users_sessions = {k: list(g) for k, g in groupby(users_data, lambda x: x[0])}
+
     res = []
-    for u in users:
-        user_data = get_user_data(u)
-        user_data["sessions"] = []
-        visited_sessions = []
-        for suggestions in {l for l in u.suggestions}:
-            l = suggestions.single_page_session_id
-            if l not in visited_sessions:
-                visited_sessions.append(l)
-                session_data = {}
-                session_data["session_id"] = l
-                creation_date = [ll.timestamp for ll in u.lolomos if ll.single_page_session_id == l]
-                if len(creation_date) == 0:
-                    continue  # hot fix
-                else:
-                    creation_date = creation_date[0]
+    for user, user_data in users_sessions.items():
+        res.append(
+            {"user": {
+                "creation_date": user_data[0][1].timestamp(),
+                "creation_date_human": str(user_data[0][1]),
+                "user_id": user},
+                "links": get_user_links(user),
+                "sessions": [{"session_id": session_id,
+                              "creation_date": creation_date.timestamp(),
+                              "creation_date_human": str(creation_date),
+                              "links": [{"name": "thumbnails",
+                                         "href": get_api_root() + f"api/user/{user}/session/{session_id}/thumbnails"},
 
-                session_data["creation_date"] = creation_date.timestamp()
-                session_data["creation_date_human"] = str(creation_date)
+                                        {"name": "session",
+                                         "href": get_api_root() + f"api/user/{user}/session/{session_id}"},
 
-                link_data = {"name": "thumbnails",
-                             "href": get_api_root() + "api/user/%s/session/%s/thumbnails" % (u.extension_id, l)}
+                                        {"name": "watches",
+                                         "href": get_api_root() + f"api/user/{user}/session/{session_id}/watches"},
 
-                session_link = {"name": "session",
-                                "href": get_api_root() + "api/user/%s/session/%s" % (u.extension_id, l)}
+                                        {"name": "lolomos",
+                                         "href": get_api_root() + f"api/user/{user}/session/{session_id}/lolomos"}]} for
+                             _, _, creation_date, session_id in user_data]
 
-                watch_link = {"name": "watches",
-                              "href": get_api_root() + "api/user/%s/session/%s/watches" % (u.extension_id, l)}
+            }
 
-                lolomo_link = {"name": "lolomos",
-                               "href": get_api_root() + "api/user/%s/session/%s/lolomos" % (u.extension_id, l)}
-
-                session_data["links"] = [link_data, watch_link, lolomo_link, session_link]
-                user_data["sessions"].append(session_data)
-        if len(user_data["sessions"]) > 0:
-            sorted(user_data["sessions"], key=lambda x: -x["creation_date"])
-            res.append(user_data)
+        )
 
     return json.dumps(res, cls=SetEncoder), 200, {'Content-Type': 'application/json'}
 
@@ -278,7 +281,7 @@ def get_thumnails_for_lolomo(user_id, lolomo_id):
             .all())
 
     data["lolomo_info"] = extract_lolomo_data([db.session.query(Lolomo).get(lolomo_id)])[0]
-    data["thumbnails"] = extract_thumbnails_data(sorted(set(suggests), key=lambda x: x.rank), User.extension_id,
+    data["thumbnails"] = extract_thumbnails_data(sorted(set(suggests), key=lambda x: x.rank), user_id,
                                                  include_lolomo=False)
     data["links"] = get_user_links(user_id)
     return json.dumps(data), 200, {'Content-Type': 'application/json'}
@@ -448,7 +451,7 @@ def get_watches_data(session_id, user_id, watches):
     return {
         "watches": {watch.video_id: {"timestamp": watch.timestamp.timestamp(), "timestamp_human": str(watch.timestamp),
                                      "duration_seconds": (
-                                             watch.stop_time - watch.timestamp).seconds if watch.stop_time else "unknown",
+                                                 watch.stop_time - watch.timestamp).seconds if watch.stop_time else "unknown",
                                      "row": watch.row, "rank": watch.rank}
                     for user, watch in watches},
         "links": [
