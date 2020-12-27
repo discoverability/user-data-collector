@@ -8,6 +8,12 @@ class AuthorizedIP(db.Model):
     ip = db.Column(db.String(15), primary_key=True)
 
 
+class DirectSchedule(db.Model):
+    __tablename__ = "DIRECT_SCHEDULE"
+    video_id = db.Column(db.Integer, primary_key=True)
+    airing_time = db.Column(db.DateTime, primary_key=True)
+
+
 class User(db.Model):
     __tablename__ = "user"
     id = db.Column(db.Integer, primary_key=True)

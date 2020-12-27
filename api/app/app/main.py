@@ -27,6 +27,7 @@ execution_context = os.environ.get("EXECUTION_CONTEXT", "conso-api;api")
 execution_contexts = execution_context.split(";")
 if "conso-api" in execution_contexts:
 	from app.routes import *
+	from app.direct_schedule_api import *
 if "api" in execution_contexts:
 	from app.dataviz_api import *
 	from app.datavis_custom import *

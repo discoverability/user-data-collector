@@ -6,7 +6,7 @@ from anonymizeip import anonymize_ip
 from sqlalchemy import func, text
 from flask import request, abort, redirect
 from app.main import app as api, db, cache
-from app.models import User, NetflixSuggestMetadata, NetflixWatchMetadata, Lolomo, Session
+from app.models import User, NetflixSuggestMetadata, NetflixWatchMetadata, Lolomo, Session, DirectSchedule
 
 from functools import wraps, reduce
 import collections
@@ -743,3 +743,13 @@ def get_netflix_thumbnail_by_video_id_by_user_id(video_id, user_id, limit, date_
         .order_by(NetflixSuggestMetadata.video_id.asc(), NetflixSuggestMetadata.timestamp.desc()).limit(limit)
 
     return api_netflix_thumbnails_logs_to_json(logs)
+
+
+@api.route("/direct", methods=['GET'])
+def get_direct_schedule():
+    res = []
+    for entry in db.session.query(DirectSchedule).order_by(DirectSchedule.airing_time.asc()).all():
+        res.append({"airing_time": entry.airing_time.timestamp(), "airing_time_human": str(entry.airing_time),
+                    "video_id": entry.video_id, "links": [{"rel": "content",
+                                                           "href": f"https://platform-api.vod-prime.space/api/emns/provider/4/identifier/{entry.video_id}"}]})
+    return json.dumps(res, cls=SetEncoder), 200, {'Content-Type': 'application/json'}
