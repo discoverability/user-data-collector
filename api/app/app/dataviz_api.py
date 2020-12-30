@@ -495,12 +495,12 @@ def get_user(user_id):
 @api.route("/api/user/<user_id>/sessions", methods=['GET'])
 @cache.cached(timeout=10)
 def get_sessions_for_user(user_id):
-    lolomos = db.session.query(Lolomo.single_page_session_id, func.max(Lolomo.timestamp)).join(User).filter(
+    lolomos = db.session.query(Lolomo.single_page_session_id, func.max(Lolomo.timestamp), func.max(Lolomo.ip)).join(User).filter(
         User.id == Lolomo.user_id).filter(
-        User.extension_id == user_id).group_by(Lolomo.single_page_session_id).all()
+        User.extension_id == user_id).group_by(Lolomo.single_page_session_id,Lolomo.ip).all()
 
     res = [{lolomo[0]: {"creation_date": lolomo[1].timestamp(),
-                        "creation_date_human": str(lolomo[1]), "links": [
+                        "creation_date_human": str(lolomo[1]), "ip": anonymize_ip(lolomo[2]), "links": [
             {
                 "rel": "thumbnails",
                 "href": get_api_root() + f"api/user/{user_id}/session/{lolomo[0]}/thumbnails"
@@ -512,6 +512,10 @@ def get_sessions_for_user(user_id):
             {
                 "rel": "lolomos",
                 "href": get_api_root() + f"api/user/{user_id}/session/{lolomo[0]}/lolomos"
+            },
+            {
+                "rel": "country",
+                "href": f"https://ipinfo.io/{anonymize_ip(lolomo[2])}/country"
             }
         ]}} for lolomo in lolomos]
 
