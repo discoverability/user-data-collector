@@ -94,7 +94,10 @@ def api_root():
                        {"rel": "custom",
                         "href": get_api_root() + "api/custom"},
                        {"rel": "stats",
-                        "href": get_api_root() + "api/stats"}
+                        "href": get_api_root() + "api/stats"},
+                       {"rel": "direct",
+                        "href": get_api_root() + "api/direct"}
+
                        ]}
     return json.dumps(links, cls=SetEncoder), 200, {'Content-Type': 'application/json'}
 
@@ -749,7 +752,7 @@ def get_netflix_thumbnail_by_video_id_by_user_id(video_id, user_id, limit, date_
     return api_netflix_thumbnails_logs_to_json(logs)
 
 
-@api.route("/direct", methods=['GET'])
+@api.route("/api/direct", methods=['GET'])
 def get_direct_schedule():
     res = []
     for entry in db.session.query(DirectSchedule).order_by(DirectSchedule.airing_time.asc()).all():
