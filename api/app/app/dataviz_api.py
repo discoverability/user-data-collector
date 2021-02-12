@@ -87,7 +87,6 @@ def api_root():
                         "doc": "You can use date_from and date_to query params to specify range: Defaults to from=last week to=today",
                         "examples": [get_api_root() + "api/thumbnails/latest?date_from=2020-10-01&date_to=2020-11-01",
                                      get_api_root() + "api/thumbnails/latest?date_from=last+week&date_to=today"]},
-,
                        {"rel": "positions-thumbnails",
                         "href": get_api_root() + "api/positions",
                         "doc": "You can use row, rank, date_from and date_to query params to specify range: Defaults to from=last week to=today",
@@ -790,15 +789,14 @@ def get_netflix_thumbnails(limit, date_from, date_to, sorted_by):
            video_id, count in logs}
     return json.dumps(res), 200, {'Content-Type': 'application/json'}
 
-@api.route("/api/netflix/positions")
+@api.route("/api/custom/netflix/positions")
 @query_args(row_pos="0", rank_pos="0", limit=9999, date_from="1900/01/01", date_to="now", sorted_by="video_id")
 def get_netflix_positions_thumbnails(row_pos, rank_pos, limit, date_from, date_to, sorted_by):
     from_date = dateparser.parse(date_from)
     to_date = dateparser.parse(date_to)
-    logs = db.session.query(NetflixSuggestMetadata.video_id,
-                            func.count(NetflixSuggestMetadata.video_id).label("total")).filter(
-        NetflixSuggestMetadata.row = row_pos) \
-        .filter(NetflixSuggestMetadata.rank = rank_pos) \
+    logs = db.session.query(NetflixSuggestMetadata.video_id,func.count(NetflixSuggestMetadata.video_id).label("total"))\
+        .filter(NetflixSuggestMetadata.row == row_pos) \
+        .filter(NetflixSuggestMetadata.rank == rank_pos) \
         .filter(NetflixSuggestMetadata.timestamp >= from_date) \
         .filter(NetflixSuggestMetadata.timestamp <= to_date) \
         .group_by(NetflixSuggestMetadata.video_id)
