@@ -3,7 +3,6 @@ import json
 from datetime import datetime, timedelta
 import dateparser
 from anonymizeip import anonymize_ip
-from dominate.tags import video
 from sqlalchemy import func, text
 from flask import request, abort, redirect
 from app.main import app as api, db, cache
@@ -128,6 +127,7 @@ def get_latest_users(limit):
     return json.dumps(res, cls=SetEncoder), 200, {'Content-Type': 'application/json'}
 
 
+@api.route("/api/netflix/content/<video_id>", methods=['GET'])
 @api.route("/api/netflix/<video_id>", methods=['GET'])
 @query_args(date_from="1970", date_to="now", min_row=None, max_row=None, min_col=None, max_col=None)
 @cache.memoize(timeout=3600)
@@ -165,9 +165,10 @@ def get_thumbnail_infos(video_id, date_from, date_to, min_row, max_row, min_col,
     res["thumbnails"]["mean_row"] = statistics.mean(rows)
     res["thumbnails"]["mean_col"] = statistics.mean(cols)
     res["thumbnails"]["median_row"] = statistics.median(rows)
-    res["thumbnails"]["media_col"] = statistics.median(cols)
-    res["thumbnails"]["var_row"] = statistics.variance(rows)
-    res["thumbnails"]["var_cols"] = statistics.variance(cols)
+    res["thumbnails"]["median_col"] = statistics.median(cols)
+    if(len(rows)>=2):
+        res["thumbnails"]["var_row"] = statistics.variance(rows)
+        res["thumbnails"]["var_cols"] = statistics.variance(cols)
     res["thumbnails"]["position"] = collections.defaultdict(lambda: 0)
     for row, col in positions:
         res["thumbnails"]["position"][(row, col)] = res["thumbnails"]["position"][(row, col)] + 1
@@ -177,7 +178,7 @@ def get_thumbnail_infos(video_id, date_from, date_to, min_row, max_row, min_col,
 
     res["thumbnails"]["links"] = []
     res["thumbnails"]["links"].append(
-        {"ref": "metadata", "href": f"https://platform-api.vod-prime.space/api/emns/provider/4/identifier/{video_id}"})
+        get_link("metadata",  f"https://platform-api.vod-prime.space/api/emns/provider/4/identifier/{video_id}"))
 
     watches = db.session.query(NetflixWatchMetadata) \
         .filter(NetflixSuggestMetadata.video_id == video_id) \
@@ -191,7 +192,24 @@ def get_thumbnail_infos(video_id, date_from, date_to, min_row, max_row, min_col,
     return json.dumps(res, cls=SetEncoder), 200, {'Content-Type': 'application/json'}
 
 
+@api.route("/api/nextflix/thumbnails", methods=['GET'])
+def api_thumbnails():
+    return json.dumps({"links": [
+        {
+            "rel": "latest",
+            "href": get_api_root() + ""
+        },
+        {
+            "rel": "latest",
+            "href": get_api_root() + ""
+        }
+    ]
+
+    }, cls=SetEncoder), 200, {'Content-Type': 'application/json'}
+
+
 @api.route("/api/thumbnails/latest", methods=['GET'])
+@api.route("/api/netflix/thumbnails/latest", methods=['GET'])
 @query_args(limit=9999, date_from="last week", date_to="now")
 @cache.memoize(timeout=3600)
 def get_latest_logs(limit, date_from, date_to):
@@ -227,6 +245,7 @@ def get_latest_logs(limit, date_from, date_to):
 
 
 @api.route("/api/watches/latest", methods=['GET'])
+@api.route("/api/netflix/watches/latest", methods=['GET'])
 @query_args(limit=9999, date_from="last week", date_to="now")
 @cache.memoize(timeout=3600)
 def get_latest_watches(limit, date_from, date_to):
@@ -715,17 +734,31 @@ def content_link(video_id):
             "href": f"https://platform-api.vod-prime.space/api/emns/provider/4/identifier/{video_id}", }
 
 
-@api.route("/api/netflix")
-def get_netflix_root_api():
-    links = {"links": {"rel": "netflix-thumbnails",
-                       "href": get_api_root() + "api/netflix/thumbnails",
-                       "doc": """returns the list of content suggested by netflix, to which users, when and where, optionally for a particular video_id on a given time period using date_from and date_to query params. Results can be sorted using the sorted_by query param (count or video_id)""",
-                       "examples": [
-                           get_api_root() + "api/netflix/thumbnails?limit=9999&date_from=2020/10/01&date_to=now&sorted_by=count",
-                           get_api_root() + "api/netflix/thumbnails?video_id=562050&limit=9999&date_from=2020/10/01&date_to=2020/10/31&sorted_by=video_id"
+def get_link(rel, href, doc=None, examples=None):
+    link = {"rel": rel, "href": get_api_root() + href}
+    if doc:
+        link["doc"] = doc
+    if examples and len(examples) > 0:
+        link["examples"] = examples
 
-                       ]}}
-    return json.dumps(links, cls=SetEncoder), 200, {'Content-Type': 'application/json'}
+    return link
+
+
+@api.route("/api/netflix")
+def get_api_netflix_root():
+
+    return json.dumps({
+        "links": [
+            get_link("netflix-thumbnails", "api/netflix/thumbnails",
+                     """returns the list of content suggested by netflix, to which users, when and where, optionally for a particular video_id on a given time period using date_from and date_to query params. Results can be sorted using the sorted_by query param (count or video_id)""",
+                     [
+                         get_api_root() + "api/netflix/thumbnails?limit=9999&date_from=2020/10/01&date_to=now&sorted_by=count",
+                         get_api_root() + "api/netflix/thumbnails?video_id=562050&limit=9999&date_from=2020/10/01&date_to=2020/10/31&sorted_by=video_id"
+
+                     ]),
+            get_link("watches", "/netflix/watches")
+        ]
+    }, cls=SetEncoder), 200, {'Content-Type': 'application/json'}
 
 
 @api.route("/api/netflix/thumbnails")
@@ -744,11 +777,11 @@ def get_netflix_thumbnails(limit, date_from, date_to, sorted_by):
         logs = logs.order_by(text('total DESC'))
 
     logs = logs.limit(limit)
-    res = {video_id: {"count": count, "links": [{"rel": "netflix-thumbnails-details",
-                                                "href": get_api_root() + f"api/netflix/thumbnail/{video_id}"},
-                                                {"rel": "netflix-content-details",
+    res = {video_id: {"count": count, "links": [{"rel": "thumbnail-usage",
+                                                 "href": get_api_root() + f"api/netflix/thumbnail/{video_id}"},
+                                                {"rel": "content",
                                                  "href": get_api_root() + f"api/netflix/{video_id}"}
-                                                ] } for
+                                                ]} for
            video_id, count in logs}
     return json.dumps(res), 200, {'Content-Type': 'application/json'}
 
