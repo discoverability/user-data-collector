@@ -88,10 +88,10 @@ def api_root():
                         "examples": [get_api_root() + "api/thumbnails/latest?date_from=2020-10-01&date_to=2020-11-01",
                                      get_api_root() + "api/thumbnails/latest?date_from=last+week&date_to=today"]},
                        {"rel": "positions-thumbnails",
-                        "href": get_api_root() + "api/custom/netflix/positions",
+                        "href": get_api_root() + "api/netflix/positions",
                         "doc": "You can use row, rank, date_from and date_to query params to specify range: Defaults to rank=0, row=0, from=last week to=today",
-                        "examples": [get_api_root() + "api/custom/netflix/positions?row=0&rank=0&limit=9999&date_from=2020-10-01&date_to=2020-11-01",
-                                     get_api_root() + "api/custom/netflix/positions?row=0&rank=0&limit=9999&date_from=last+week&date_to=today"]},
+                        "examples": [get_api_root() + "api/netflix/positions?row=0&rank=0&limit=9999&date_from=2020-10-01&date_to=2020-11-01",
+                                     get_api_root() + "api/netflix/positions?row=0&rank=0&limit=9999&date_from=last+week&date_to=today"]},
                        {"rel": "latest-users",
                         "href": get_api_root() + "api/users/latest"},
                        {"rel": "netflix",
@@ -760,6 +760,13 @@ def get_api_netflix_root():
                          get_api_root() + "api/netflix/thumbnails?video_id=562050&limit=9999&date_from=2020/10/01&date_to=2020/10/31&sorted_by=video_id"
 
                      ]),
+            get_link("netflix-positions-thumbnails", "api/netflix/positions",
+                     """returns the list of content suggested by netflix from position thumbnails (default: row=0&rank=0), to which users, when and where, optionally for a particular video_id on a given time period using date_from and date_to query params. Results can be sorted using the sorted_by query param (count or video_id)""",
+                     [
+                         get_api_root() + "api/netflix/positions?row=0&rank=0&limit=9999&date_from=2020/10/01&date_to=now&sorted_by=count",
+                         get_api_root() + "api/netflix/positions?row=0&rank=0&limit=9999&date_from=2020/10/01&date_to=2020/10/31&sorted_by=video_id"
+
+                     ]),            
             get_link("watches", "/netflix/watches")
         ]
     }, cls=SetEncoder), 200, {'Content-Type': 'application/json'}
@@ -789,7 +796,7 @@ def get_netflix_thumbnails(limit, date_from, date_to, sorted_by):
            video_id, count in logs}
     return json.dumps(res), 200, {'Content-Type': 'application/json'}
 
-@api.route("/api/custom/netflix/positions", methods=['GET'])
+@api.route("/api/netflix/positions", methods=['GET'])
 @query_args(row=0, rank=0, limit=9999, date_from="1900/01/01", date_to="now", sorted_by="video_id")
 def get_netflix_positions_thumbnails(row, rank, limit, date_from, date_to, sorted_by):
     from_date = dateparser.parse(date_from)
