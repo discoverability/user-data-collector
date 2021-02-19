@@ -74,6 +74,9 @@ def get_tops_last_week(*args, **kwargs):
 def get_tops_last_month(*args, **kwargs):
     return redirect(get_api_root() + "api/custom/watches/tops?date_from=last+month")
 
+@documented_route("/api/custom/positions", methods=['GET'], documentation_name="netflix-positions-thumbnails")
+def get_positions_thumbnails(*args, **kwargs):
+    return redirect(get_api_root() + "api/custom/positions?row=0&rank=0&limit=9999&date_from=2020/10/01&date_to=2020/10/31&sorted_by=video_id")
 
 @api.route("/api/custom/watches/tops", methods=['GET'])
 @query_args(date_from="last week", date_to="now")
