@@ -89,11 +89,12 @@ def api_root():
                                      get_api_root() + "api/thumbnails/latest?date_from=last+week&date_to=today"]},
                        {"rel": "positions-thumbnails",
                         "href": get_api_root() + "api/custom/positions",
-                        "doc":  """returns the list of content suggested by netflix from position thumbnails (default: row=0&rank=0), to which users, when and where, optionally for a particular video_id on a given time period using date_from and date_to query params. Results can be sorted using the sorted_by query param (count or video_id)""",
-                        "examples": [get_api_root() + "api/custom/positions?row=0&rank=0&limit=9999&date_from=2020-10-01&date_to=2020-11-01",
-                                     get_api_root() + "api/custom/positions?row=0&rank=0&limit=9999&date_from=last+week&date_to=today",
-                                     get_api_root() + "api/custom/positions?row=0&rank=0&limit=9999&date_from=2020/10/01&date_to=now&sorted_by=count",
-                                     get_api_root() + "api/custom/positions?row=0&rank=0&limit=9999&date_from=2020/10/01&date_to=2020/10/31&sorted_by=video_id"]},
+                        "doc": """returns the list of content suggested by netflix from position thumbnails (default: row=0&rank=0), to which users, when and where, optionally for a particular video_id on a given time period using date_from and date_to query params. Results can be sorted using the sorted_by query param (count or video_id)""",
+                        "examples": [
+                            get_api_root() + "api/custom/positions?row=0&rank=0&limit=9999&date_from=2020-10-01&date_to=2020-11-01",
+                            get_api_root() + "api/custom/positions?row=0&rank=0&limit=9999&date_from=last+week&date_to=today",
+                            get_api_root() + "api/custom/positions?row=0&rank=0&limit=9999&date_from=2020/10/01&date_to=now&sorted_by=count",
+                            get_api_root() + "api/custom/positions?row=0&rank=0&limit=9999&date_from=2020/10/01&date_to=2020/10/31&sorted_by=video_id"]},
                        {"rel": "latest-users",
                         "href": get_api_root() + "api/users/latest"},
                        {"rel": "netflix",
@@ -172,7 +173,7 @@ def get_thumbnail_infos(video_id, date_from, date_to, min_row, max_row, min_col,
     res["thumbnails"]["mean_col"] = statistics.mean(cols)
     res["thumbnails"]["median_row"] = statistics.median(rows)
     res["thumbnails"]["median_col"] = statistics.median(cols)
-    if(len(rows)>=2):
+    if (len(rows) >= 2):
         res["thumbnails"]["var_row"] = statistics.variance(rows)
         res["thumbnails"]["var_cols"] = statistics.variance(cols)
     res["thumbnails"]["position"] = collections.defaultdict(lambda: 0)
@@ -184,7 +185,7 @@ def get_thumbnail_infos(video_id, date_from, date_to, min_row, max_row, min_col,
 
     res["thumbnails"]["links"] = []
     res["thumbnails"]["links"].append(
-        get_link("metadata",  f"https://platform-api.vod-prime.space/api/emns/provider/4/identifier/{video_id}"))
+        get_link("metadata", f"https://platform-api.vod-prime.space/api/emns/provider/4/identifier/{video_id}"))
 
     watches = db.session.query(NetflixWatchMetadata) \
         .filter(NetflixSuggestMetadata.video_id == video_id) \
@@ -544,11 +545,12 @@ def get_user_watch_for_session(user_id, session_id):
 
 def get_watches_data(session_id, user_id, watches):
     return {
-        "watches": {watch.video_id: {"timestamp": watch.timestamp.timestamp(), "timestamp_human": str(watch.timestamp),
-                                     "duration_seconds": (
-                                             watch.stop_time - watch.timestamp).seconds if watch.stop_time else "unknown",
-                                     "row": watch.row, "rank": watch.rank}
-                    for user, watch in watches},
+        "watches": [{"video_id": watch.video_id, "timestamp": watch.timestamp.timestamp(),
+                     "timestamp_human": str(watch.timestamp),
+                     "duration_seconds": (
+                             watch.stop_time - watch.timestamp).seconds if watch.stop_time else "unknown",
+                     "row": watch.row, "rank": watch.rank}
+                    for user, watch in watches],
         "links": [
 
             {
@@ -752,7 +754,6 @@ def get_link(rel, href, doc=None, examples=None):
 
 @api.route("/api/netflix")
 def get_api_netflix_root():
-
     return json.dumps({
         "links": [
             get_link("netflix-thumbnails", "api/netflix/thumbnails",
@@ -761,7 +762,7 @@ def get_api_netflix_root():
                          get_api_root() + "api/netflix/thumbnails?limit=9999&date_from=2020/10/01&date_to=now&sorted_by=count",
                          get_api_root() + "api/netflix/thumbnails?video_id=562050&limit=9999&date_from=2020/10/01&date_to=2020/10/31&sorted_by=video_id"
 
-                     ]),            
+                     ]),
             get_link("watches", "/netflix/watches")
         ]
     }, cls=SetEncoder), 200, {'Content-Type': 'application/json'}
@@ -791,12 +792,13 @@ def get_netflix_thumbnails(limit, date_from, date_to, sorted_by):
            video_id, count in logs}
     return json.dumps(res), 200, {'Content-Type': 'application/json'}
 
+
 @api.route("/api/custom/positions", methods=['GET'])
 @query_args(row=0, rank=0, limit=9999, date_from="1900/01/01", date_to="now", sorted_by="video_id")
 def get_netflix_positions_thumbnails(row, rank, limit, date_from, date_to, sorted_by):
     from_date = dateparser.parse(date_from)
     to_date = dateparser.parse(date_to)
-    logs = db.session.query(NetflixSuggestMetadata.video_id,func.count(NetflixSuggestMetadata.video_id).label("total"))\
+    logs = db.session.query(NetflixSuggestMetadata.video_id, func.count(NetflixSuggestMetadata.video_id).label("total")) \
         .filter(NetflixSuggestMetadata.row == row) \
         .filter(NetflixSuggestMetadata.rank == rank) \
         .filter(NetflixSuggestMetadata.timestamp >= from_date) \
@@ -812,6 +814,7 @@ def get_netflix_positions_thumbnails(row, rank, limit, date_from, date_to, sorte
                                                 "href": get_api_root() + f"api/netflix/thumbnail/{video_id}"}} for
            video_id, count in logs}
     return json.dumps(res), 200, {'Content-Type': 'application/json'}
+
 
 @api.route("/api/netflix/thumbnails_all")
 @query_args(limit=9999, date_from="1900/01/01", date_to="now", sorted_by="video_id")
