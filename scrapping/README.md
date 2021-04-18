@@ -1,3 +1,0 @@
-- install the correct version of the chromedriver in your path (tested with v80)
-- ask chrome to pack the extension for you
-- run the ruby scraping stuff with the packed extension as an option
